@@ -1,0 +1,56 @@
+#include "civic.h"
+
+// This function returns the n-th Fibonacci number.
+int fib (int n) {
+    if (n <= 1) return n;
+    else return fib(n - 1) + fib(n - 2);  
+    return 0;                               // moet ik dit includen als een header file?
+}
+
+// This function prints first n Fibonacci numbers.
+int fibs (int n) {
+
+    for (int i = 0, n) {
+        printInt(fib(i));
+        printSpaces(1);
+    }
+    return 0;
+}
+
+// This function returns true if n is a prime number and false otherwise.
+bool isprime (int n) {
+    
+    bool isprime;
+    isprime = true;
+
+    for (int i = 2, n) {
+          if (n % i == 0 ) {
+               isprime = false;
+               return isprime; 
+          }  
+    }
+    return isprime;
+}
+
+// This function print first n prime numbers.
+int prime (int n){
+
+    for (int i = 1, n) {
+        
+        // Use the is prime function to check if the number is prime.
+        if (isprime(i)) {
+            printInt(i);
+            printSpaces(1);
+        }
+    }
+    return 0;
+}
+
+export int main() {
+    fibs(4);
+    printNewlines(1);
+    prime(20);
+    printNewlines(1);
+    return 0;
+}
+

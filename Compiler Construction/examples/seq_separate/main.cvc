@@ -1,0 +1,8 @@
+extern int scanInt();
+
+extern void seq(int limit);
+
+export int main() {
+    seq(scanInt());
+    return 0;
+}

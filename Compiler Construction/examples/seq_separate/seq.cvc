@@ -1,0 +1,9 @@
+extern void printInt(int val);
+extern void printNewlines(int num);
+
+export void seq(int limit) {
+    for (int i = 1, limit + 1) {
+        printInt(i);
+        printNewlines(1);
+    }
+}

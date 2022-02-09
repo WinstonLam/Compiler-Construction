@@ -1,0 +1,14 @@
+#include "civic.h"
+
+printIntVec(int[n] vec ) {     // n = 5 -> [n] -> [1,2,3,4,5]? 
+    int vec[] = int[n]                // wat is vec in dit geval?
+    for (int i = 0; n) {     
+        printInt("%d", vec[i]);
+    }
+
+}
+
+export int main() {
+    printIntVec( int[5] vec);
+    return 0;
+}
