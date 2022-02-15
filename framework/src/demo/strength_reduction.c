@@ -13,7 +13,7 @@
  *****************************************************************************/
 
 
-#include "strength_redcution.h"
+#include "strength_reduction.h"
 
 #include "types.h"
 #include "tree_basic.h"
@@ -36,25 +36,19 @@ node *SRbinop( node *arg_node, info *arg_info)
  // Check if Bin op is multiplication
  if (BINOP_OP( arg_node) == BO_mul) {
    
-   /* 1. verander de multiplication met for loop? 
-    * 2. hoe worden de variabelen in opt_sub aangepast?
-    * 
-    * 3. mogelijke oplossing: 
-    * for (int i = 0, BINOP_RIGHT( arg_node) ) {
-    *   BINOP_LEFT( arg_node) += BINOP_LEFT( arg_node)
-    */
-   
+   // check for 0 in either left or right
+   if (BINOP_LEFT( arg_node) == 0 ||
+   BINOP_RIGHT( arg_node) == 0) {
+     arg_node = FREEdoFreeTree( arg_node);
+     arg_node = TBmakeNum( 0);
+   }
+  
+    for (int i = 0, BINOP_RIGHT( arg_node)) {
+      BINOP_LEFT( arg_node) += BINOP_LEFT( arg_node)
+    
     }
 
   DBUG_RETURN( arg_node);
-}
-
-
-node *SRvarlet( node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("SRvarlet");
-
-  
 }
 
 /*

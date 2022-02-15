@@ -51,7 +51,7 @@ struct INFO {
  * INFO functions
  */
 
-static info *MakeInfo(void)
+static info *MakeInfo(void)     // zou deze functie niet een struct moeten returnen?
 {
   info *result;
 
@@ -59,9 +59,13 @@ static info *MakeInfo(void)
 
   result = (info *)MEMmalloc(sizeof(info));
 
-  INFO_SUM( result) = 0;
+  INFO_ADD( result) = 0;
+  INFO_SUB( result) = 0;
+  INFO_MUL( result) = 0;
+  INFO_DIV( result) = 0;
+  INFO_MOD( result) = 0;
 
-  DBUG_RETURN( result);
+  DBUG_RETURN( result);     // moet ik hier een struct returnen?
 }
 
 static info *FreeInfo( info *info)
@@ -78,11 +82,21 @@ static info *FreeInfo( info *info)
  * Traversal functions
  */
 
-node *SInum (node *arg_node, info *arg_info)
+node *ACnum (node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("SInum");
+  DBUG_ENTER("ACnum");
 
-  INFO_SUM( arg_info) += NUM_VALUE(arg_node);
+  if (BINOP_OP( arg_node) == BO_add) {
+      INFO_ADD(arg_info) += 1;       // wat doet arg_info hier?
+  } else if (BINOP_OP( arg_node) == BO_sub) {
+      INFO_SUB(arg_info) += 1; 
+  } else if (BINOP_OP( arg_node) == BO_mul) {
+      INFO_MUL(arg_info) += 1;
+  } else if (BINOP_OP( arg_node) == BO_div) {
+      INFO_DIV(arg_info) += 1;
+  } else if (BINOP_OP( arg_node) == BO_mod) {
+      INFO_MOD(arg_info) += 1;
+  } 
 
   DBUG_RETURN( arg_node);
 }
@@ -92,11 +106,11 @@ node *SInum (node *arg_node, info *arg_info)
  * Traversal start function
  */
 
-node *SIdoSumInts( node *syntaxtree)
+node *ACdoArithCounter( node *syntaxtree)
 {
   info *arg_info;
 
-  DBUG_ENTER("SIdoSumIns");
+  DBUG_ENTER("ACdoArithCounter");
 
   arg_info = MakeInfo();
 
@@ -104,7 +118,11 @@ node *SIdoSumInts( node *syntaxtree)
   syntaxtree = TRAVdo( syntaxtree, arg_info);
   TRAVpop();
 
-  CTInote( "Sum of integer constants: %d", INFO_SUM( arg_info));
+  CTInote( "Number of addition artihmetics: %d\n", INFO_ADD( arg_info));
+  CTInote( "Number of subtraction artihmetics: %d\n", INFO_SUB( arg_info));
+  CTInote( "Number of multiplication artihmetics: %d\n", INFO_MUL( arg_info));
+  CTInote( "Number of division artihmetics: %d\n", INFO_DIV( arg_info));
+  CTInote( "Number of modulo artihmetics: %d", INFO_MOD( arg_info));
 
   arg_info = FreeInfo( arg_info);
 

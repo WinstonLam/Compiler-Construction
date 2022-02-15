@@ -60,6 +60,12 @@
         </travuser>
       </traversal>
 
+      <traversal id="SR" name="Strength reduction" default="sons" include="strength_redcution.h">
+        <travuser>
+          <node name="BinOp" />
+        </travuser>
+      </traversal>
+
     </general>
   </phases>
 
