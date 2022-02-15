@@ -35,7 +35,7 @@ node *SRbinop( node *arg_node, info *arg_info)
 
  // Check if Bin op is multiplication
  if (BINOP_OP( arg_node) == BO_mul) {
-
+   
    /* 1. verander de multiplication met for loop? 
     * 2. hoe worden de variabelen in opt_sub aangepast?
     * 

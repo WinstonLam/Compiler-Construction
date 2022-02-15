@@ -2,8 +2,23 @@
 
 // This function returns the greatest common denominator of a and b.
 int gcd(int a, int b) {
-    return a % b;
-}
+    
+    int gcd = 1; 
+    int n = 0;
+    
+    if (a > b) {
+        n = b;
+    } else {
+        n = a;
+    }
+    for (int i = 1, n) { 
+        if (a % i == 0 && b % i == 0) {
+            gcd = i;
+        }
+    }
+    return gcd;
+    }
+
 
 // This function returns the factorial of n.
 int fac (int n) {
@@ -39,13 +54,13 @@ bool isprime (int n){
 }
 
 export int main() {
-    printInt(fac(5));
-    printNewlines(1);
+    // printInt(fac(5));
+    // printNewlines(1);
     printInt(gcd(10,6));
     printNewlines(1);
-    printInt(fib(3));
-    printNewlines(1);
-    isprime(3);             // How to print this
+    // printInt(fib(3));
+    // printNewlines(1);
+    // isprime(3);             // How to print this
     return 0;
 }
 
