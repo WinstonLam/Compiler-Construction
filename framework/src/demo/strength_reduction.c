@@ -40,16 +40,21 @@ node *SRbinop( node *arg_node, info *arg_info)
  // Check if Bin op is multiplication
  if (BINOP_OP( arg_node) == BO_mul) {
    
+   if (NODE_TYPE(BINOP_LEFT( arg_node)) == N_num ||
+   NODE_TYPE(BINOP_RIGHT( arg_node)) == N_num) {
 
-  if (NUM_VALUE(BINOP_LEFT( arg_node)) == 2) {
+      if (NUM_VALUE(BINOP_LEFT( arg_node)) == 2) {
     
-    node *left = TBmakeNum(NUM_VALUE(BINOP_LEFT( arg_node)));
-    node *right = TBmakeNum(NUM_VALUE(BINOP_RIGHT( arg_node)));;
-    node *new = TBmakeBinop (BO_add, left, right);
+      node *left = TBmakeNum(NUM_VALUE(BINOP_LEFT( arg_node)));
+      node *right = TBmakeNum(NUM_VALUE(BINOP_RIGHT( arg_node)));;
+      node *new = TBmakeBinop (BO_add, left, right);
    
-    arg_node = FREEdoFreeTree( arg_node);
-    arg_node = new;  
-  }
+      arg_node = FREEdoFreeTree( arg_node);
+      arg_node = new;  
+      }
+   }
+
+  
   
   
 }
