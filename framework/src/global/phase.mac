@@ -51,7 +51,13 @@ SUBPHASE( os,
           OSdoOptSub, 
           ALWAYS,
           pet)   
-      
+
+SUBPHASE( sr, 
+          "Strength reduction",
+          SRdoStrengthReduction, 
+          ALWAYS,
+          pet)   
+
 ENDPHASE( pet) 
 
 

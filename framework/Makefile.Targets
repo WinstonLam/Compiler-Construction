@@ -79,6 +79,6 @@ print       = print.o
 
 codegen     = gen_byte_code.o
 
-demo        = rename_identifiers.o opt_sub.o sum_ints.o strength_redcution.o
+demo        = rename_identifiers.o opt_sub.o sum_ints.o strength_reduction.o
 
 

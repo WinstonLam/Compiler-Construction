@@ -24,4 +24,7 @@ extern node *PRTerror (node * arg_node, info * arg_info);
 
 extern node *PRTdoPrint( node *syntaxtree);
 
+extern node *PRTwhile (node * arg_node, info * arg_info);
+extern node *PRTdo (node * arg_node, info * arg_info);
+
 #endif /* _SAC_PRT_NODE_H_ */

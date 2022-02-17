@@ -22,11 +22,15 @@
 
 #include "str.h"
 #include "memory.h"
+#include "free.h"
 
 
 /*
  * Traversal functions
  */
+
+
+
 
 node *SRbinop( node *arg_node, info *arg_info)
 {
@@ -36,19 +40,20 @@ node *SRbinop( node *arg_node, info *arg_info)
  // Check if Bin op is multiplication
  if (BINOP_OP( arg_node) == BO_mul) {
    
-   // check for 0 in either left or right
-   if (BINOP_LEFT( arg_node) == 0 ||
-   BINOP_RIGHT( arg_node) == 0) {
-     arg_node = FREEdoFreeTree( arg_node);
-     arg_node = TBmakeNum( 0);
-   }
-  
-    for (int i = 0, BINOP_RIGHT( arg_node)) {
-      BINOP_LEFT( arg_node) += BINOP_LEFT( arg_node)
-    
-    }
 
-  DBUG_RETURN( arg_node);
+  if (NUM_VALUE(BINOP_LEFT( arg_node)) == 2) {
+    
+    node *left = TBmakeNum(NUM_VALUE(BINOP_LEFT( arg_node)));
+    node *right = TBmakeNum(NUM_VALUE(BINOP_RIGHT( arg_node)));;
+    node *new = TBmakeBinop (BO_add, left, right);
+   
+    arg_node = FREEdoFreeTree( arg_node);
+    arg_node = new;  
+  }
+  
+  
+}
+DBUG_RETURN( arg_node);
 }
 
 /*

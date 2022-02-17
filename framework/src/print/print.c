@@ -109,6 +109,57 @@ PRTassign (node * arg_node, info * arg_info)
   DBUG_RETURN (arg_node);
 }
 
+/** <!--******************************************************************-->
+ *
+ * @fn PRTdo
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node BinOp node to process
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+
+node *
+PRTdo (node * arg_node, info * arg_info)
+{
+  DBUG_ENTER ("PRTdo");
+
+  DO_BLOCK( arg_node) = TRAVdo( DO_BLOCK( arg_node), arg_info);
+  
+  printf( "performing function in do while loop\n");
+  
+  DBUG_RETURN (arg_node);
+}
+
+/** <!--******************************************************************-->
+ *
+ * @fn PRTwhile
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node BinOp node to process ??
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+
+node *
+PRTwhile (node * arg_node, info * arg_info)
+{
+  DBUG_ENTER ("PRTwhile");
+
+  WHILE_EXPR( arg_node) = TRAVdo( WHILE_EXPR( arg_node), arg_info);
+  
+  printf( "Return to statement\n");
+  
+  DBUG_RETURN (arg_node);
+}
+
+
 
 /** <!--******************************************************************-->
  *

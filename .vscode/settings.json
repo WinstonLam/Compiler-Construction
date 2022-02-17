@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.cvc": "c",
+        "gen_byte_code.h": "c",
+        "traverse.h": "c",
+        "tree_basic.h": "c"
+    }
+}
