@@ -3,6 +3,17 @@
         "*.cvc": "c",
         "gen_byte_code.h": "c",
         "traverse.h": "c",
-        "tree_basic.h": "c"
+        "tree_basic.h": "c",
+        "strength_reduction.h": "c",
+        "types.h": "c",
+        "types_trav.h": "c",
+        "ctinfo.h": "c",
+        "copy_info.h": "c",
+        "copy_node.h": "c",
+        "free.h": "c",
+        "str.h": "c",
+        "memory.h": "c",
+        "typeinfo": "c",
+        "civic.h": "c"
     }
 }

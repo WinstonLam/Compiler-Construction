@@ -1,7 +1,52 @@
 gcd:
+    esr 4
+    iloadc_1
+    istore 2
+    iloadc_0
+    istore 3
     iload_0
     iload_1
+    igt
+    branch_f 13_else
+    iload_1
+    istore 3
+    jump 14_end
+13_else:
+    iload_0
+    istore 3
+14_end:
+    iloadc_1
+    istore 4
+    iload_3
+    istore 5
+8_while:
+    iload 4
+    iload 5
+    ilt
+    branch_f 9_end
+    iload_0
+    iload 4
     irem
+    iloadc_0
+    ieq
+    branch_f 11_false_expr
+    iload_1
+    iload 4
+    irem
+    iloadc_0
+    ieq
+    jump 12_end
+11_false_expr:
+    bloadc_f
+12_end:
+    branch_f 10_end
+    iload 4
+    istore 2
+10_end:
+    iinc_1 4               ; add -> inc
+    jump 8_while
+9_end:
+    iload_2
     ireturn
 
 fac:
@@ -82,45 +127,11 @@ isprime:
     bload_1
     breturn
 
-main:
-    isrg
-    isrg
-    iloadc 1
-    jsr 1 fac
-    jsre 0
-    isrg
-    iloadc_1
-    jsre 5
-    isrg
-    isrg
-    iloadc 2
-    iloadc 3
-    jsr 2 gcd
-    jsre 0
-    isrg
-    iloadc_1
-    jsre 5
-    isrg
-    isrg
-    iloadc 4
-    jsr 1 fib
-    jsre 0
-    isrg
-    iloadc_1
-    jsre 5
-    isrg
-    iloadc 4
-    jsr 1 isprime
-    bpop
-    iloadc_0
-    ireturn
-
 .const int 2
-.const int 5
-.const int 10
-.const int 6
-.const int 3
-.exportfun "main" int main
+.exportfun "gcd" int int int gcd
+.exportfun "fac" int int fac
+.exportfun "fib" int int fib
+.exportfun "isprime" bool int isprime
 .importfun "printInt" void int
 .importfun "printFloat" void float
 .importfun "scanInt" int

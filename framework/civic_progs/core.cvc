@@ -1,7 +1,7 @@
 #include "civic.h"
 
 // This function returns the greatest common denominator of a and b.
-int gcd(int a, int b) {
+export int gcd(int a, int b) {
     
     int gcd = 1; 
     int n = 0;
@@ -17,29 +17,29 @@ int gcd(int a, int b) {
         }
     }
     return gcd;
-    }
+}
+
 
 
 // This function returns the factorial of n.
-int fac (int n) {
+export int fac (int n) {
     int f = 0;
 
     for (int i = 1, n) {
-       f = i * n;               // hoe kan ik += doen?
+       f = i * n;              
     }
-
     return f;
 }
 
 // This function returns the n-th Fibonacci number.
-int fib (int n) {
+export int fib (int n) {
     if (n <= 1) return n;
     else return fib(n - 1) + fib(n - 2);  
     return 0;                     
 }
 
 // This function returns true if n is a prime number and false otherwise.
-bool isprime (int n){
+export bool isprime (int n){
     
     bool isprime;
     isprime = true;
@@ -51,16 +51,5 @@ bool isprime (int n){
           } 
     }
     return isprime;
-}
-
-export int main() {
-    // printInt(fac(5));
-    // printNewlines(1);
-    printInt(gcd(10,6));
-    printNewlines(1);
-    // printInt(fib(3));
-    // printNewlines(1);
-    // isprime(3);             // How to print this
-    return 0;
 }
 

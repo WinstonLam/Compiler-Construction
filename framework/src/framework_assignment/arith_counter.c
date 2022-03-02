@@ -22,6 +22,7 @@
 
 #include "memory.h"
 #include "ctinfo.h"
+#include "check.h"
 
 
 /*
@@ -82,25 +83,30 @@ static info *FreeInfo( info *info)
  * Traversal functions
  */
 
-node *ACnum (node *arg_node, info *arg_info)
+node *ACbinop (node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("ACnum");
+ 
+  DBUG_ENTER("ACbinop");
 
-  if (BINOP_OP( arg_node) == BO_add) {
-      INFO_ADD(arg_info) += 1;       // wat doet arg_info hier?
-  } else if (BINOP_OP( arg_node) == BO_sub) {
-      INFO_SUB(arg_info) += 1; 
-  } else if (BINOP_OP( arg_node) == BO_mul) {
-      INFO_MUL(arg_info) += 1;
-  } else if (BINOP_OP( arg_node) == BO_div) {
-      INFO_DIV(arg_info) += 1;
-  } else if (BINOP_OP( arg_node) == BO_mod) {
-      INFO_MOD(arg_info) += 1;
-  } 
+  
 
+  if (CHKbinop( arg_node, arg_info)) {
+  
+      if (BINOP_OP( arg_node) == BO_add) {
+        INFO_ADD(arg_info) += 1;       
+    } else if (BINOP_OP( arg_node) == BO_sub) {
+        INFO_SUB(arg_info) += 1; 
+    } else if (BINOP_OP( arg_node) == BO_mul) {
+        INFO_MUL(arg_info) += 1;
+    } else if (BINOP_OP( arg_node) == BO_div) {
+        INFO_DIV(arg_info) += 1;
+    } else if (BINOP_OP( arg_node) == BO_mod) {
+        INFO_MOD(arg_info) += 1;
+    } 
+
+  }
   DBUG_RETURN( arg_node);
 }
-
 
 /*
  * Traversal start function
@@ -114,16 +120,16 @@ node *ACdoArithCounter( node *syntaxtree)
 
   arg_info = MakeInfo();
 
-  TRAVpush( TR_si);
+  TRAVpush( TR_ac);
   syntaxtree = TRAVdo( syntaxtree, arg_info);
   TRAVpop();
-
-  CTInote( "Number of addition artihmetics: %d\n", INFO_ADD( arg_info));
-  CTInote( "Number of subtraction artihmetics: %d\n", INFO_SUB( arg_info));
-  CTInote( "Number of multiplication artihmetics: %d\n", INFO_MUL( arg_info));
-  CTInote( "Number of division artihmetics: %d\n", INFO_DIV( arg_info));
-  CTInote( "Number of modulo artihmetics: %d", INFO_MOD( arg_info));
-
+  
+  MODULE_ADD(syntaxtree) = INFO_ADD(arg_info);
+  MODULE_SUB(syntaxtree) = INFO_SUB(arg_info);
+  MODULE_MUL(syntaxtree) = INFO_MUL(arg_info);
+  MODULE_DIV(syntaxtree) = INFO_DIV(arg_info);
+  MODULE_MOD(syntaxtree) = INFO_MOD(arg_info); 
+  
   arg_info = FreeInfo( arg_info);
 
   DBUG_RETURN( syntaxtree);

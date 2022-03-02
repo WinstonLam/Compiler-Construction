@@ -28,6 +28,7 @@
 %e 2000 /* set nodes to 1100 */
 %option noyywrap
 %option nounput
+%option debug
 
 
 %%
@@ -39,12 +40,14 @@
 
 "-"                        { FILTER( MINUS); }
 "+"                        { FILTER( PLUS);  }
-"*"                        { FILTER( STAR);  } 
-"/"                        { FILTER( SLASH);  } 
-"%"                        { FILTER( PERCENT);  } 
+"*"                        { FILTER( STAR);  } \
+"/"                        { FILTER( SLASH);  }
+"%"                        { FILTER( PERCENT);  }
+
+"!"                        { FILTER( FACTORIAL); }
 
 "<="                       { FILTER( LE);    }
-"<"                        { FILTER( LT);    } 
+"<"                        { FILTER( LT);    }
 ">="                       { FILTER( GE);    }
 ">"                        { FILTER( GT);    }
 "=="                       { FILTER( EQ);    }
@@ -65,10 +68,22 @@
                              FILTER( NUM);
                            }
 
+[0-9]+\.[0-9]+([eE][+-][0-9]+)?  { yylval.cflt = atof(yytext);
+                                   FILTER( FLOAT);
+                                  }
+
 \n.*                       { global.line += 1;
                              global.col = 0;
                              yyless(1);
                            }
 
 [ \t]                      { global.col += yyleng;
-                           } 
+                           }
+
+int(\s)+;                  {
+                            FILTER( NUM);
+                            }
+
+.                          {
+                            CTIerror("Unknown token %s found\n", STRcpy(yytext));
+                            }

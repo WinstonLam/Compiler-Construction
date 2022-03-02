@@ -1,6 +1,6 @@
 #include "civic.h"
 
-void printIntVec(int[n] vec ) {   
+export void printIntVec(int[n] vec ) {   
                
     for (int i = 0, n) {     
         printInt(vec[i]);
@@ -8,7 +8,7 @@ void printIntVec(int[n] vec ) {
     }
 }
 
-void printFloatVec(float[n] vec ) {    
+export void printFloatVec(float[n] vec ) {    
                
     for (int i = 0, n) {     
         printFloat(vec[i]);
@@ -16,7 +16,7 @@ void printFloatVec(float[n] vec ) {
     }
 }
 
-void printIntMat(int[m,n] mat ) {
+export void printIntMat(int[m,n] mat ) {
     
     for (int i = 0, m) {
         for (int j = 0, n) {
@@ -27,31 +27,30 @@ void printIntMat(int[m,n] mat ) {
     }
 }
 
-void printFloatMat(float[m,n] mat ) {
+export void printFloatMat(float[m,n] mat ) {
     
     for (int i = 0, m) {
         for (int j = 0, n) {
             printFloat(mat[i,j]);
             printSpaces(1);
-           
         }
          printNewlines(1);   
     }
 }
 
-void scanIntVec(int[n] vec) {
+export void scanIntVec(int[n] vec) {
     for (int i = 0, n) {
         scanInt();
     }
 }
 
-void scanFloatVec(float[n] vec) {
+export void scanFloatVec(float[n] vec) {
     for (int i = 0, n) {
         scanFloat();
     }
 }
 
-void scanIntMat( int[m,n] mat ) {
+export void scanIntMat( int[m,n] mat ) {
     for (int i = 0, m){
         for (int i=0, n){
             scanInt();
@@ -59,7 +58,7 @@ void scanIntMat( int[m,n] mat ) {
     }
 }
 
-void scanFloatMat( float[m,n] mat ) {
+export void scanFloatMat( float[m,n] mat ) {
     for (int i = 0, m){
         for (int i=0, n){
             scanFloat();
@@ -67,7 +66,7 @@ void scanFloatMat( float[m,n] mat ) {
     }
 }
 
-void matMul( float[m,n ] a, float[o,p ] b, float[q,l ] c ) {
+export void matMul( float[m,n ] a, float[o,p ] b, float[q,l ] c ) {
 
     for (int i = 0, m){
         for (int j=0 , n){
@@ -77,25 +76,3 @@ void matMul( float[m,n ] a, float[o,p ] b, float[q,l ] c ) {
 }
 
 
-export int main() {
-    int[3] vec = [1,2,3];
-    float[3] vecf = [1.0, 2.0, 3.0];
-    int[2,2] mat = [[1,2], [3,4]];
-    float[2,2] matf = [[1.0,2.0], [3.0,4.0]];
-    float[2,2] matf2;
-    
-
-
-    // printIntVec(vec);
-    // printFloatVec(vecf);
-    // printIntMat(mat);
-    // printFloatMat(matf);
-    // scanIntVec(vec);
-    // scanFloatVec(vecf);
-    scanIntMat(mat);
-    scanFloatMat(matf);
-    matMul(matf, matf, matf2);
-    printFloatMat(matf2);
-    
-    return 0;
-}

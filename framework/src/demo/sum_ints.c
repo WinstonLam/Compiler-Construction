@@ -73,7 +73,7 @@ static info *FreeInfo( info *info)
 node *SInum (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("SInum");
-
+  
   INFO_SUM( arg_info) += NUM_VALUE(arg_node);
 
   DBUG_RETURN( arg_node);

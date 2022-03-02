@@ -37,26 +37,38 @@ PHASE( pet,
 SUBPHASE( ri, 
           "Rename identifiers",
           RIdoRenameIdentifiers, 
-          ALWAYS,
+          NEVER,
           pet)      
 
 SUBPHASE( si, 
           "Sum Integers",
           SIdoSumInts, 
-          ALWAYS,
+          NEVER,
           pet)   
    
 SUBPHASE( os, 
           "Optimise subtraction",
           OSdoOptSub, 
-          ALWAYS,
+          NEVER,
           pet)   
 
 SUBPHASE( sr, 
           "Strength reduction",
           SRdoStrengthReduction, 
           ALWAYS,
+          pet) 
+
+SUBPHASE( ac, 
+          "Arith counter",
+          ACdoArithCounter, 
+          ALWAYS,
           pet)   
+
+SUBPHASE( co, 
+          "Count occurances",
+          COdoCountOcc, 
+          ALWAYS,
+          pet) 
 
 ENDPHASE( pet) 
 
