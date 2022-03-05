@@ -54,7 +54,7 @@ static info *FreeInfo(info *info)
  *
  * @brief Prints the node and its sons/attributes
  *
- * @param arg_node SOME node to process
+ * @param arg_node letrec node to process
  * @param arg_info pointer to info structure
  *
  * @return processed node
@@ -65,6 +65,8 @@ node *
 PRTprogram(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTprogram");
+
+  PROGRAM_DECLS(arg_node) = TRAVdo(PROGRAM_DECLS(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
 }
@@ -87,6 +89,10 @@ PRTdecls(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTdecls");
 
+  DECLS_DECL(arg_node) = TRAVdo(DECLS_DECL(arg_node), arg_info);
+
+  DECLS_NEXT(arg_node) = TRAVopt(DECLS_NEXT(arg_node), arg_info);
+
   DBUG_RETURN(arg_node);
 }
 
@@ -107,6 +113,9 @@ node *
 PRTexprs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTexprs");
+
+  EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+  EXPRS_NEXT(arg_node) = TRAVdo(EXPRS_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
 }
@@ -478,31 +487,6 @@ PRTmonop(node *arg_node, info *arg_info)
  * VANAF HIER IS HET AL BESCHREVEN
  *
  */
-
-/** <!--******************************************************************-->
- *
- * @fn PRTstmts
- *
- * @brief Prints the node and its sons/attributes
- *
- * @param arg_node BinOp node to process
- * @param arg_info pointer to info structure
- *
- * @return processed node
- *
- ***************************************************************************/
-
-node *
-PRTstmts(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("PRTstmts");
-
-  STMTS_STMT(arg_node) = TRAVdo(STMTS_STMT(arg_node), arg_info);
-
-  STMTS_NEXT(arg_node) = TRAVopt(STMTS_NEXT(arg_node), arg_info);
-
-  DBUG_RETURN(arg_node);
-}
 
 /** <!--******************************************************************-->
  *
