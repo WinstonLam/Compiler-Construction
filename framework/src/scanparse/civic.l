@@ -60,6 +60,12 @@
 "true"                     { FILTER( TRUEVAL); }
 "false"                    { FILTER( FALSEVAL); }
 
+"extern"                   { FILTER( EXTERN); }
+"bool"                     { FILTER( TYPE_BOOL); }
+"int"                      { FILTER( TYPE_INT); }
+"float"                    { FILTER( TYPE_FLOAT); }
+"void"                     { FILTER( TYPE_VOID); }
+
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);
                              FILTER( ID);
                            }
@@ -80,7 +86,7 @@
 [ \t]                      { global.col += yyleng;
                            }
 
-int(\s)+;                  {
+int                  {
                             FILTER( NUM);
                             }
 
