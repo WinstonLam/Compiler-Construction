@@ -66,6 +66,8 @@
 "float"                    { FILTER( TYPE_FLOAT); }
 "void"                     { FILTER( TYPE_VOID); }
 
+"export"                   { FILTER( EXPORT); }
+
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);
                              FILTER( ID);
                            }

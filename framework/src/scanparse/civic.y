@@ -34,7 +34,7 @@ static int yyerror( char *errname);
 %token BRACKET_L BRACKET_R COMMA SEMICOLON
 %token MINUS PLUS STAR SLASH PERCENT LE LT GE GT EQ NE OR AND
 %token TRUEVAL FALSEVAL LET EXTERN TYPE_BOOL TYPE_INT TYPE_FLOAT TYPE_VOID TYPE
-%token FACTORIAL
+%token FACTORIAL EXPORT
 
 %token <cint> NUM
 %token <cflt> FLOAT
@@ -43,7 +43,10 @@ static int yyerror( char *errname);
 // type/basictype een goede waarde hebben (het zijn geen node pointers)
 
 %type <ctype> type basictype
-%type <node> globdecl program declarations declaration
+%type <node> program declarations declaration
+%type <node> globdecl
+%type <node> fundef funheader param
+%type <node> globdef
 // %type <node> intval  boolval constant expr
 // %type <node> stmts stmt assign varlet
 // %type <cbinop> binop
@@ -58,17 +61,25 @@ program: declarations
         }
         ;
 
-declarations: declaration
+declarations: declaration declarations
       {
-        $$ = $1;
+        $$ = TBmakeDecls($1, $2);
       }
-    | declarations declaration
+    | declaration
       {
-        $$ = $1;
+        $$ = TBmakeDecls($1, NULL);
       }
       ;
 
 declaration: globdecl
+        {
+          $$ = $1;
+        }
+        | fundef
+        {
+          $$ = $1;
+        }
+        | globdef
         {
           $$ = $1;
         }
@@ -79,6 +90,24 @@ globdecl: EXTERN type ID
         $$ = TBmakeGlobdecl( $2, $3, NULL);
       }
       ;
+fundef: EXPORT funheader type // type moet hier funbody zijn maar voor testen is het type // nonterminal useless in grammer complaint
+      {
+        $$ = TBmakeFundef($2, $3, NULL);
+      }
+      ;
+funheader: basictype ID param
+      {
+        $$ = $1, $2, $3;
+      }
+      ;
+param: type ID
+      {
+        $$ = TBmakeParam($1, $2);
+      }
+globdef: EXPORT type ID LET expr
+      {
+        $$ = TBmakeGlobdef(NULL, $1, $2, $4)
+      }
 
 type: basictype
       {
@@ -103,6 +132,7 @@ basictype: TYPE_BOOL
           $$ = T_void;
         }
         ;
+
 
 // fundef: type ID BRACKET_L BRACKET_R SEMICOLON {};
 
@@ -212,12 +242,10 @@ basictype: TYPE_BOOL
 // monop: FACTORIAL { $$ = MO_fact; }
 //      ;
 %%
-
-static int yyerror( char *error)
+static int yyerror (char *error)
 {
-  CTIabort( "line %d, col %d\nError parsing source code: %s\n",
+  CTIabort("line %d, col %d\nError parsing source code: %s\n",
             global.line, global.col, error);
-
   return( 0);
 }
 
