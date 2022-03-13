@@ -45,10 +45,13 @@ static int yyerror( char *errname);
 %type <ctype> type basictype
 %type <node> program declarations declaration
 %type <node> globdecl
-%type <node> fundef funheader param
+%type <node> fundefs fundef param
+%type <node> funbody 
+%type <node> vardecl
 %type <node> globdef
-// %type <node> intval  boolval constant expr
-// %type <node> stmts stmt assign varlet
+%type <node> constant expr
+%type <node> intval boolval floatval
+%type <node> stmts stmt //assign varlet
 // %type <cbinop> binop
 // %type <cmonop> monop
 
@@ -90,23 +93,39 @@ globdecl: EXTERN type ID
         $$ = TBmakeGlobdecl( $2, $3, NULL);
       }
       ;
-fundef: EXPORT funheader type // type moet hier funbody zijn maar voor testen is het type // nonterminal useless in grammer complaint
+fundefs: fundef fundefs
       {
-        $$ = TBmakeFundef($2, $3, NULL);
+        $$ = TBmakeFundefs($1, $2);
+      }
+      | fundef
+      {
+        $$ = TBmakeFundefs($1, NULL);
+      }
+fundef: type ID BRACKET_L funbody param BRACKET_R // funbody is op NULL gezet voor testen.
+      {
+        $$ = TBmakeFundef($1, STRcpy($2), $4, $5);
       }
       ;
-funheader: basictype ID param
+funbody: vardecl fundefs stmts
       {
-        $$ = $1, $2, $3;
+        $$ = TBmakeFunbody(NULL, $1, $2);
       }
-      ;
+vardecl: type ID LET expr
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // wat moeten dims en next hier zijn?
+      }
+/* funheader: basictype ID param // zit fun header er uberhaupt in als je kijkt naar hoe TBmakefundef beschreven is
+      {
+        $$ = $1, $3;
+      }
+      ; */
 param: type ID
       {
-        $$ = TBmakeParam($1, $2);
+        $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL); // wat moeten dims en next hier zijn?
       }
 globdef: EXPORT type ID LET expr
       {
-        $$ = TBmakeGlobdef(NULL, $1, $2, $4)
+        $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
       }
 
 type: basictype
@@ -132,7 +151,32 @@ basictype: TYPE_BOOL
           $$ = T_void;
         }
         ;
-
+constant: intval
+           {
+             $$ = $1;
+           }
+         | boolval
+           {
+             $$ = $1;
+           }
+         | floatval
+           {
+             $$ = $1;
+           }
+         ;
+expr: constant
+      {
+         $$ = $1;
+       }
+     /* | varlet ID
+       {
+         $$ = TBmakeVar( STRcpy( $2), $1, 0);
+       }
+     | BRACKET_L expr binop expr BRACKET_R
+       {
+         $$ = TBmakeBinop( $3, $2, $4);
+       }
+     ; */
 
 // fundef: type ID BRACKET_L BRACKET_R SEMICOLON {};
 
@@ -141,21 +185,21 @@ basictype: TYPE_BOOL
 //       }
 //     ;
 
-// stmt: assign
-//        {
-//          $$ = $1;
-//        }
-//        ;
+ stmt: 
+        {
+          $$ = NULL;
+        }
+        ;
 
-// stmts: stmt stmts
-//         {
-//           $$ = TBmakeStmts( $1, $2);
-//         }
-//       | stmt
-//         {
-//           $$ = TBmakeStmts( $1, NULL);
-//         }
-//         ;
+stmts: stmt stmts
+         {
+           $$ = TBmakeStmts( $1, $2);
+         }
+       | stmt
+         {
+           $$ = TBmakeStmts( $1, NULL);
+         }
+         ;
 
 // assign: varlet LET expr SEMICOLON
 //         {
@@ -175,55 +219,30 @@ basictype: TYPE_BOOL
 //         }
 //         ;
 
-// expr: constant
-//       {
-//         $$ = $1;
-//       }
-//     | varlet ID
-//       {
-//         $$ = TBmakeVar( STRcpy( $2), $1, 0);
-//       }
-//     | BRACKET_L expr binop expr BRACKET_R
-//       {
-//         $$ = TBmakeBinop( $3, $2, $4);
-//       }
-//     ;
 
-// constant: floatval
-//           {
-//             $$ = $1;
-//           }
-//         | intval
-//           {
-//             $$ = $1;
-//           }
-//         | boolval
-//           {
-//             $$ = $1;
-//           }
-//         ;
 
-// floatval: FLOAT
-//            {
-//              $$ = TBmakeFloat( $1);
-//            }
-//          ;
 
-// intval: NUM
-//         {
-//           $$ = TBmakeNum( $1);
-//         }
-//       ;
+ floatval: FLOAT
+            {
+              $$ = TBmakeFloat( $1);
+            }
+          ;
 
-// boolval: TRUEVAL
-//          {
-//            $$ = TBmakeBool( TRUE);
-//          }
-//        | FALSEVAL
-//          {
-//            $$ = TBmakeBool( FALSE);
-//          }
-//        ;
+ intval: NUM
+         {
+           $$ = TBmakeNum( $1);
+         }
+       ;
+
+ boolval: TRUEVAL
+          {
+            $$ = TBmakeBool( TRUE);
+          }
+        | FALSEVAL
+          {
+            $$ = TBmakeBool( FALSE);
+          }
+        ;
 
 // binop: PLUS      { $$ = BO_add; }
 //      | MINUS     { $$ = BO_sub; }
