@@ -1,5 +1,5 @@
 %{
-
+#define YYDEBUG 1
 
 #include <stdio.h>
 #include <string.h>
@@ -31,29 +31,31 @@ static int yyerror( char *errname);
  node               *node;
 }
 
-%token BRACKET_L BRACKET_R COMMA SEMICOLON
+%token BRACKET_L BRACKET_R COMMA SEMICOLON BRACES_L BRACES_R
 %token MINUS PLUS STAR SLASH PERCENT LE LT GE GT EQ NE OR AND
 %token TRUEVAL FALSEVAL LET EXTERN TYPE_BOOL TYPE_INT TYPE_FLOAT TYPE_VOID TYPE
-%token FACTORIAL EXPORT
+%token FACTORIAL EXPORT WHILE FOR IF RETURN ELSE DO
 
 %token <cint> NUM
 %token <cflt> FLOAT
 %token <id> ID
 
-// type/basictype een goede waarde hebben (het zijn geen node pointers)
-
-%type <ctype> type basictype
+%type <ctype> type
 %type <node> program declarations declaration
 %type <node> globdecl
 %type <node> fundefs fundef param
-%type <node> funbody 
+%type <node> funbody
 %type <node> vardecl
 %type <node> globdef
-%type <node> constant expr
+%type <node> constant exprs expr
 %type <node> intval boolval floatval
-%type <node> stmts stmt //assign varlet
-// %type <cbinop> binop
-// %type <cmonop> monop
+%type <node> stmts stmt
+%type <node> block
+%type <node> assign varlet for dowhile while return exprstmts ifelse
+
+//assign varlet
+%type <cbinop> binop
+%type <cmonop> monop
 
 
 %%
@@ -88,9 +90,9 @@ declaration: globdecl
         }
         ;
 
-globdecl: EXTERN type ID
+globdecl: EXTERN type ID SEMICOLON
       {
-        $$ = TBmakeGlobdecl( $2, $3, NULL);
+        $$ = TBmakeGlobdecl( $2, STRcpy($3), NULL);
       }
       ;
 fundefs: fundef fundefs
@@ -99,11 +101,11 @@ fundefs: fundef fundefs
       }
       | fundef
       {
-        $$ = TBmakeFundefs($1, NULL);
+        $$ = $1;
       }
-fundef: type ID BRACKET_L funbody param BRACKET_R // funbody is op NULL gezet voor testen.
+fundef: type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
-        $$ = TBmakeFundef($1, STRcpy($2), $4, $5);
+        $$ = TBmakeFundef($1, STRcpy($2), $7, $4);
       }
       ;
 funbody: vardecl fundefs stmts
@@ -112,29 +114,18 @@ funbody: vardecl fundefs stmts
       }
 vardecl: type ID LET expr
       {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // wat moeten dims en next hier zijn?
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // Dims en Next zijn voor nu nog NULL
       }
-/* funheader: basictype ID param // zit fun header er uberhaupt in als je kijkt naar hoe TBmakefundef beschreven is
-      {
-        $$ = $1, $3;
-      }
-      ; */
 param: type ID
       {
-        $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL); // wat moeten dims en next hier zijn?
+        $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL); // Dims en Next zijn voor nu nog NULL
       }
 globdef: EXPORT type ID LET expr
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
       }
 
-type: basictype
-      {
-        $$ = $1;
-      }
-      ;
-
-basictype: TYPE_BOOL
+type: TYPE_BOOL
         {
           $$ = T_bool;
         }
@@ -164,32 +155,146 @@ constant: intval
              $$ = $1;
            }
          ;
+
+exprs: expr exprs
+      {
+        TBmakeExprs($1, $2);
+      }
+      | expr
+      {
+        TBmakeExprs($1, NULL);
+      }
+      ;
+
 expr: constant
       {
          $$ = $1;
-       }
-     /* | varlet ID
+      }
+      | expr binop expr 
        {
-         $$ = TBmakeVar( STRcpy( $2), $1, 0);
+         $$ = TBmakeBinop( $2, $1, $3);
        }
-     | BRACKET_L expr binop expr BRACKET_R
+      | monop expr
        {
-         $$ = TBmakeBinop( $3, $2, $4);
+         $$ = TBmakeMonop($1, $2);
        }
-     ; */
+      | BRACKET_L type BRACKET_R expr
+      {
+        $$ = TBmakeCast($2, $4);
+      }
+      | ID BRACKET_L BRACKET_R
+      {
+        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL); // Wat moet decl hier zijn?
+      }
+      | ID BRACKET_L stmts BRACKET_R
+      {
+        $$ = TBmakeFuncall(STRcpy($1), NULL, $3);
+      }
+      | ID
+      {
+        $$ = TBmakeVar(STRcpy($1), NULL, NULL); //TBmakeVar wat moeten hier de decl en indices zijn?
+      }
+     ;
 
-// fundef: type ID BRACKET_L BRACKET_R SEMICOLON {};
-
-// vardef: type ID ';'
-//       { // Generate error if type == T_void here or do it in type checking.
-//       }
-//     ;
-
- stmt: 
+ stmt: assign
         {
-          $$ = NULL;
+           $$ = $1;
+        }
+        | exprstmts
+        {
+          $$ = $1;
+        }
+        | ifelse
+        {
+          $$ = $1;
+        }
+        | while
+        {
+          $$ = $1;
+        }
+        | dowhile
+        {
+          $$ = $1;
+        }
+        | for
+        {
+          $$ = $1;
+        }
+        | return
+        {
+          $$= $1;
         }
         ;
+assign: varlet LET expr SEMICOLON
+      {
+        $$ = TBmakeAssign($1, $3);
+      }
+      ;
+exprstmts: ID BRACKET_L BRACKET_R SEMICOLON
+        {
+          $$ = TBmakeExprstmt(NULL);
+        }
+        | ID BRACKET_L stmts BRACKET_R SEMICOLON
+        {
+          $$ = TBmakeExprstmt($3);
+        }
+        ;
+
+ifelse: IF BRACKET_L expr BRACKET_R block
+        {
+          $$ = TBmakeIfelse($3, $5, NULL);
+        }
+        | IF BRACKET_L expr BRACKET_R block ELSE block
+        {
+          $$ = TBmakeIfelse($3, $5, $7);
+        }
+        ;
+
+while: WHILE BRACKET_L expr BRACKET_R block
+        {
+          $$ = TBmakeWhile($3,$5);
+        }
+        ;
+
+dowhile: DO block WHILE BRACKET_L expr BRACKET_R SEMICOLON
+        {
+          $$ = TBmakeDowhile($5, $2);
+        }
+        ;
+
+for: FOR BRACKET_L TYPE_INT ID LET expr COMMA expr BRACKET_R block
+        {
+          $$ =  TBmakeFor($4, $6, $8, NULL, $10);
+        }
+        | FOR BRACKET_L TYPE_INT ID LET expr COMMA expr COMMA expr BRACKET_R block
+        {
+          $$ = TBmakeFor($4, $6, $8, $10, $12);
+        }
+        ;
+
+return: RETURN SEMICOLON
+        {
+          $$ = TBmakeReturn(NULL);
+        }
+        | RETURN expr SEMICOLON
+        {
+          $$ = TBmakeReturn($2);
+        }
+        ;
+varlet: constant
+      {
+         $$ = $1;     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
+      }
+      ;
+block: BRACES_L stmts BRACES_R
+      {
+        $$ = $2;
+      }
+      | stmt
+      {
+        $$ = $1;
+      }
+      ;
 
 stmts: stmt stmts
          {
@@ -200,27 +305,6 @@ stmts: stmt stmts
            $$ = TBmakeStmts( $1, NULL);
          }
          ;
-
-// assign: varlet LET expr SEMICOLON
-//         {
-//           $$ = TBmakeAssign( $1, $3);
-//         }
-//         ;
-
-// varlet: varlet ID indices
-//         {
-//           $$ = TBmakeVarlet( STRcpy( $2), $1, 0);
-//         }
-//         ;
-
-// indices: NUM
-//         {
-//           $$ = TBmakeNum( $1);
-//         }
-//         ;
-
-
-
 
  floatval: FLOAT
             {
@@ -244,22 +328,22 @@ stmts: stmt stmts
           }
         ;
 
-// binop: PLUS      { $$ = BO_add; }
-//      | MINUS     { $$ = BO_sub; }
-//      | STAR      { $$ = BO_mul; }
-//      | SLASH     { $$ = BO_div; }
-//      | PERCENT   { $$ = BO_mod; }
-//      | LE        { $$ = BO_le; }
-//      | LT        { $$ = BO_lt; }
-//      | GE        { $$ = BO_ge; }
-//      | GT        { $$ = BO_gt; }
-//      | EQ        { $$ = BO_eq; }
-//      | OR        { $$ = BO_or; }
-//      | AND       { $$ = BO_and; }
-//      ;
-
-// monop: FACTORIAL { $$ = MO_fact; }
-//      ;
+ binop: PLUS      { $$ = BO_add; }
+      | MINUS     { $$ = BO_sub; }
+      | STAR      { $$ = BO_mul; }
+      | SLASH     { $$ = BO_div; }
+      | PERCENT   { $$ = BO_mod; }
+      | LE        { $$ = BO_le; }
+      | LT        { $$ = BO_lt; }
+      | GE        { $$ = BO_ge; }
+      | GT        { $$ = BO_gt; }
+      | EQ        { $$ = BO_eq; }
+      | OR        { $$ = BO_or; }
+      | AND       { $$ = BO_and; }
+      ;
+monop: FACTORIAL  { $$ = MO_not; }
+      | MINUS     { $$ = MO_neg; }
+      ;
 %%
 static int yyerror (char *error)
 {
@@ -270,6 +354,7 @@ static int yyerror (char *error)
 
 node *YYparseTree( void)
 {
+  yydebug = 1;
   DBUG_ENTER("YYparseTree");
 
   yyparse();
