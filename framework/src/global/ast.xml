@@ -27,7 +27,6 @@
       <traversal id="COPY" name="Copy Syntax Tree" default="user" include="copy_node.h" />
       <traversal id="FREE" name="Free Syntax Tree" default="user" include="free_node.h" />
       <traversal id="CHK" name="Check Syntax Tree" default="user" include="check.h" />
-    
     </general>
 </phases>
 <nodesets>

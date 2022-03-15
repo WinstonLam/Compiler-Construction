@@ -42,7 +42,7 @@
 
 "-"                        { FILTER( MINUS); }
 "+"                        { FILTER( PLUS);  }
-"*"                        { FILTER( STAR);  } \
+"*"                        { FILTER( STAR);  }
 "/"                        { FILTER( SLASH);  }
 "%"                        { FILTER( PERCENT);  }
 
@@ -74,7 +74,7 @@
 "do"                       { FILTER (DO); }
 "return"                   { FILTER (RETURN); }
 "if"                       { FILTER (IF); }
-"else"                      { FILTER (ELSE); } 
+"else"                      { FILTER (ELSE); }
 
 
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);

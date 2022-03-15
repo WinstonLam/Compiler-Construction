@@ -57,12 +57,13 @@ static int yyerror( char *errname);
 %type <cbinop> binop
 %type <cmonop> monop
 
+%start program
 
 %%
 
 program: declarations
         {
-          TBmakeProgram($1);
+          parseresult = TBmakeProgram($1);
         }
         ;
 
@@ -103,23 +104,32 @@ fundefs: fundef fundefs
       {
         $$ = $1;
       }
+      ;
+
 fundef: type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($1, STRcpy($2), $7, $4);
       }
       ;
+
 funbody: vardecl fundefs stmts
       {
         $$ = TBmakeFunbody(NULL, $1, $2);
       }
+      ;
+
 vardecl: type ID LET expr
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // Dims en Next zijn voor nu nog NULL
       }
+      ;
+
 param: type ID
       {
         $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL); // Dims en Next zijn voor nu nog NULL
       }
+      ;
+
 globdef: EXPORT type ID LET expr
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
@@ -170,7 +180,7 @@ expr: constant
       {
          $$ = $1;
       }
-      | expr binop expr 
+      | expr binop expr
        {
          $$ = TBmakeBinop( $2, $1, $3);
        }
@@ -225,11 +235,13 @@ expr: constant
           $$= $1;
         }
         ;
+
 assign: varlet LET expr SEMICOLON
       {
         $$ = TBmakeAssign($1, $3);
       }
       ;
+
 exprstmts: ID BRACKET_L BRACKET_R SEMICOLON
         {
           $$ = TBmakeExprstmt(NULL);
@@ -281,11 +293,13 @@ return: RETURN SEMICOLON
           $$ = TBmakeReturn($2);
         }
         ;
+
 varlet: constant
       {
          $$ = $1;     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
       }
       ;
+
 block: BRACES_L stmts BRACES_R
       {
         $$ = $2;
