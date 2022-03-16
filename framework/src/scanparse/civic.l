@@ -36,7 +36,7 @@
 "("                        { FILTER( BRACKET_L); }
 ")"                        { FILTER( BRACKET_R); }
 "{"                        { FILTER( BRACES_L); }
-"}"                        { FILTER( BRACES_L); }
+"}"                        { FILTER( BRACES_R); }
 ","                        { FILTER( COMMA); }
 ";"                        { FILTER( SEMICOLON); }
 
@@ -69,12 +69,12 @@
 "void"                     { FILTER( TYPE_VOID); }
 
 "export"                   { FILTER( EXPORT); }
-"while"                    { FILTER (WHILE); }
-"for"                      { FILTER (FOR); }
-"do"                       { FILTER (DO); }
-"return"                   { FILTER (RETURN); }
-"if"                       { FILTER (IF); }
-"else"                      { FILTER (ELSE); }
+"while"                    { FILTER( WHILE); }
+"for"                      { FILTER( FOR); }
+"do"                       { FILTER( DO); }
+"return"                   { FILTER( RETURN); }
+"if"                       { FILTER( IF); }
+"else"                      { FILTER( ELSE); }
 
 
 [A-Za-z][A-Za-z0-9_]*      { yylval.id = STRcpy(yytext);

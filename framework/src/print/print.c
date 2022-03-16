@@ -476,7 +476,7 @@ PRTglobdecl(node *arg_node, info *arg_info)
 
   GLOBDECL_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
   printf("extern ");
-  printf("%d ", GLOBDECL_TYPE(arg_node)); // ???
+  printf("%d ", GLOBDECL_TYPE(arg_node));
   printf("%s", GLOBDECL_NAME(arg_node));
   printf(";\n");
   DBUG_RETURN(arg_node);
