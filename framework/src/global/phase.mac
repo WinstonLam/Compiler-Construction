@@ -14,17 +14,17 @@ PHASE( ld,
 
 SUBPHASE( cpp,
           "Running C preprocessor",
-          SPdoRunPreProcessor, 
+          SPdoRunPreProcessor,
           NEVER,
           ld)
 
 SUBPHASE( scp,
           "Reading input file",
-          SPdoScanParse, 
+          SPdoScanParse,
           ALWAYS,
           ld)
 
-ENDPHASE( ld) 
+ENDPHASE( ld)
 
 
 /******************************************************************************/
@@ -34,16 +34,16 @@ PHASE( cg,
        "Generating Code",
        ALWAYS)
 
-SUBPHASE( prt, "Generating byte code", GBCdoGenByteCode, ALWAYS, cg)      
-SUBPHASE( prt_ast, "Print ast", PRTdoPrint, ALWAYS, cg)      
+SUBPHASE( prt, "Generating byte code", GBCdoGenByteCode, ALWAYS, cg)
+SUBPHASE( prt_ast, "Print ast", PRTdoPrint, ALWAYS, cg)
 
-SUBPHASE( frtr, 
+SUBPHASE( frtr,
           "De-allocating syntax tree representation",
-          FREEdoFreeTree, 
+          FREEdoFreeTree,
           ALWAYS,
           cg)
 
-ENDPHASE( cg) 
+ENDPHASE( cg)
 
 
 /******************************************************************************/

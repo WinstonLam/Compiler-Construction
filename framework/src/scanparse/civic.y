@@ -57,12 +57,26 @@ static int yyerror( char *errname);
 %type <cbinop> binop
 %type <cmonop> monop
 
+%precedence CAST
+%precedence THEN
+%precedence ELSE
+
+%left MINUS PLUS
+%right UMINUS FACTORIAL
+%left STAR SLASH PERCENT
+%left LE LT GE GT
+%left NE
+%right EQ
+%left OR AND
+
+
+%start program
 
 %%
 
 program: declarations
         {
-          TBmakeProgram($1);
+          parseresult = TBmakeProgram($1);
         }
         ;
 
@@ -95,31 +109,55 @@ globdecl: EXTERN type ID SEMICOLON
         $$ = TBmakeGlobdecl( $2, STRcpy($3), NULL);
       }
       ;
-fundefs: fundef fundefs
-      {
-        $$ = TBmakeFundefs($1, $2);
-      }
-      | fundef
-      {
-        $$ = $1;
-      }
+
 fundef: type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($1, STRcpy($2), $7, $4);
       }
-      ;
-funbody: vardecl fundefs stmts
+      | type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
       {
-        $$ = TBmakeFunbody(NULL, $1, $2);
+        $$ = TBmakeFundef($1, STRcpy($2), $6, NULL);
       }
-vardecl: type ID LET expr
+      ;
+
+funbody: vardecl stmts
+      {
+        $$ = TBmakeFunbody($1, NULL, $2);
+      }
+      | vardecl
+      {
+        $$ = TBmakeFunbody($1, NULL, NULL);
+      }
+      | stmts
+      {
+        $$ = TBmakeFunbody(NULL, NULL, $1);
+      }
+      |
+      {
+        $$ = TBmakeFunbody(NULL, NULL, NULL);
+      }
+      ;
+
+vardecl: type ID LET expr vardecl
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $5); // Dims en Next zijn voor nu nog NULL
+      }
+      | type ID LET expr
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // Dims en Next zijn voor nu nog NULL
       }
+      | type ID
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL); // Dims en Next zijn voor nu nog NULL
+      }
+      ;
+
 param: type ID
       {
         $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL); // Dims en Next zijn voor nu nog NULL
       }
+      ;
+
 globdef: EXPORT type ID LET expr
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
@@ -142,6 +180,7 @@ type: TYPE_BOOL
           $$ = T_void;
         }
         ;
+
 constant: intval
            {
              $$ = $1;
@@ -156,9 +195,9 @@ constant: intval
            }
          ;
 
-exprs: expr exprs
+exprs: expr COMMA exprs
       {
-        TBmakeExprs($1, $2);
+        TBmakeExprs($1, $3);
       }
       | expr
       {
@@ -170,15 +209,67 @@ expr: constant
       {
          $$ = $1;
       }
-      | expr binop expr 
+      | expr PLUS expr
        {
-         $$ = TBmakeBinop( $2, $1, $3);
+         $$ = TBmakeBinop( BO_add, $1, $3);
        }
-      | monop expr
+      | expr MINUS expr
        {
-         $$ = TBmakeMonop($1, $2);
+         $$ = TBmakeBinop( BO_sub, $1, $3);
        }
-      | BRACKET_L type BRACKET_R expr
+      | expr STAR expr
+       {
+         $$ = TBmakeBinop( BO_mul, $1, $3);
+       }
+       | expr SLASH expr
+       {
+         $$ = TBmakeBinop( BO_div, $1, $3);
+       }
+       | expr PERCENT expr
+       {
+         $$ = TBmakeBinop( BO_mod, $1, $3);
+       }
+       | expr LE expr
+       {
+         $$ = TBmakeBinop( BO_le, $1, $3);
+       }
+       | expr LT expr
+       {
+         $$ = TBmakeBinop( BO_lt, $1, $3);
+       }
+       | expr GE expr
+       {
+         $$ = TBmakeBinop( BO_ge, $1, $3);
+       }
+       | expr GT expr
+       {
+         $$ = TBmakeBinop( BO_gt, $1, $3);
+       }
+       | expr EQ expr
+       {
+         $$ = TBmakeBinop( BO_eq, $1, $3);
+       }
+       | expr NE expr
+       {
+         $$ = TBmakeBinop( BO_ne, $1, $3);
+       }
+       | expr OR expr
+       {
+         $$ = TBmakeBinop( BO_or, $1, $3);
+       }
+       | expr AND expr
+       {
+         $$ = TBmakeBinop( BO_and, $1, $3);
+       }
+       | FACTORIAL expr
+       {
+         $$ = TBmakeMonop( MO_not, $2);
+       }
+       | MINUS expr %prec UMINUS
+       {
+         $$ = TBmakeMonop( MO_neg, $2);
+       }
+      | BRACKET_L type BRACKET_R expr %prec CAST
       {
         $$ = TBmakeCast($2, $4);
       }
@@ -186,7 +277,7 @@ expr: constant
       {
         $$ = TBmakeFuncall(STRcpy($1), NULL, NULL); // Wat moet decl hier zijn?
       }
-      | ID BRACKET_L stmts BRACKET_R
+      | ID BRACKET_L exprs BRACKET_R
       {
         $$ = TBmakeFuncall(STRcpy($1), NULL, $3);
       }
@@ -222,14 +313,16 @@ expr: constant
         }
         | return
         {
-          $$= $1;
+          $$ = $1;
         }
         ;
+
 assign: varlet LET expr SEMICOLON
       {
         $$ = TBmakeAssign($1, $3);
       }
       ;
+
 exprstmts: ID BRACKET_L BRACKET_R SEMICOLON
         {
           $$ = TBmakeExprstmt(NULL);
@@ -240,19 +333,19 @@ exprstmts: ID BRACKET_L BRACKET_R SEMICOLON
         }
         ;
 
-ifelse: IF BRACKET_L expr BRACKET_R block
-        {
-          $$ = TBmakeIfelse($3, $5, NULL);
-        }
-        | IF BRACKET_L expr BRACKET_R block ELSE block
+ifelse: IF BRACKET_L expr BRACKET_R block ELSE block
         {
           $$ = TBmakeIfelse($3, $5, $7);
+        }
+        |IF BRACKET_L expr BRACKET_R block %prec THEN
+        {
+          $$ = TBmakeIfelse($3, $5, NULL);
         }
         ;
 
 while: WHILE BRACKET_L expr BRACKET_R block
         {
-          $$ = TBmakeWhile($3,$5);
+          $$ = TBmakeWhile($3, $5);
         }
         ;
 
@@ -281,12 +374,18 @@ return: RETURN SEMICOLON
           $$ = TBmakeReturn($2);
         }
         ;
+
 varlet: constant
       {
          $$ = $1;     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
       }
       ;
+
 block: BRACES_L stmts BRACES_R
+      {
+        $$ = $2;
+      }
+      | BRACES_L stmt BRACES_R
       {
         $$ = $2;
       }
@@ -304,6 +403,10 @@ stmts: stmt stmts
          {
            $$ = TBmakeStmts( $1, NULL);
          }
+      |
+        {
+          $$ = NULL;
+        }
          ;
 
  floatval: FLOAT
@@ -328,22 +431,17 @@ stmts: stmt stmts
           }
         ;
 
- binop: PLUS      { $$ = BO_add; }
-      | MINUS     { $$ = BO_sub; }
-      | STAR      { $$ = BO_mul; }
-      | SLASH     { $$ = BO_div; }
-      | PERCENT   { $$ = BO_mod; }
-      | LE        { $$ = BO_le; }
-      | LT        { $$ = BO_lt; }
-      | GE        { $$ = BO_ge; }
-      | GT        { $$ = BO_gt; }
-      | EQ        { $$ = BO_eq; }
-      | OR        { $$ = BO_or; }
-      | AND       { $$ = BO_and; }
-      ;
-monop: FACTORIAL  { $$ = MO_not; }
-      | MINUS     { $$ = MO_neg; }
-      ;
+// Extension work
+// fundefs: fundef fundefs
+//       {
+//         $$ = TBmakeFundefs($1, $2);
+//       }
+//       | fundef
+//       {
+//         $$ = $1;
+//       }
+//       ;
+
 %%
 static int yyerror (char *error)
 {
