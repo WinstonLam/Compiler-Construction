@@ -138,15 +138,15 @@ funbody: vardecl stmts
       }
       ;
 
-vardecl: type ID LET expr vardecl
+vardecl: type ID LET expr SEMICOLON vardecl
       {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $5); // Dims en Next zijn voor nu nog NULL
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $6); // Dims en Next zijn voor nu nog NULL
       }
-      | type ID LET expr
+      | type ID LET expr SEMICOLON
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL); // Dims en Next zijn voor nu nog NULL
       }
-      | type ID
+      | type ID SEMICOLON
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL); // Dims en Next zijn voor nu nog NULL
       }
@@ -327,7 +327,11 @@ exprstmts: ID BRACKET_L BRACKET_R SEMICOLON
         {
           $$ = TBmakeExprstmt(NULL);
         }
-        | ID BRACKET_L stmts BRACKET_R SEMICOLON
+        | ID BRACKET_L expr BRACKET_R SEMICOLON
+        {
+          $$ = TBmakeExprstmt($3);
+        }
+        | ID BRACKET_L exprs BRACKET_R SEMICOLON
         {
           $$ = TBmakeExprstmt($3);
         }
@@ -375,9 +379,9 @@ return: RETURN SEMICOLON
         }
         ;
 
-varlet: constant
+varlet: ID
       {
-         $$ = $1;     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
+         $$ = TBmakeVarlet(STRcpy($1), NULL, NULL);     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
       }
       ;
 

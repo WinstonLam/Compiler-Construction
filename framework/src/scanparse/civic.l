@@ -89,7 +89,7 @@
                                    FILTER( FLOAT);
                                   }
 
-\n.*                       { global.line += 1;
+\n*                       { global.line += 1;
                              global.col = 0;
                              yyless(1);
                            }

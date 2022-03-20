@@ -48,6 +48,28 @@ static info *FreeInfo(info *info)
 
   return info;
 }
+
+static void TypePrinter(type types)
+{
+  switch (types)
+  {
+    case T_void:
+      printf("void ");
+      break;
+    case T_bool:
+      printf("bool ");
+      break;
+    case T_int:
+      printf("int ");
+      break;
+    case T_float:
+      printf("float ");
+      break;
+    case T_unknown:
+      DBUG_ASSERT(0, "unknown type detected!");
+      break;
+  }
+}
 /** <!--******************************************************************-->
  *
  * @fn PRTprogram
@@ -186,9 +208,11 @@ node *
 PRTexprstmt(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTexprstmt");
-
-  EXPRSTMT_EXPR(arg_node) = TRAVdo(EXPRSTMT_EXPR(arg_node), arg_info);
-
+  if (EXPRSTMT_EXPR(arg_node) != NULL) {
+    printf("(");
+    EXPRSTMT_EXPR(arg_node) = TRAVdo(EXPRSTMT_EXPR(arg_node), arg_info);
+    printf(");");
+  }
   DBUG_RETURN(arg_node);
 }
 
@@ -212,7 +236,7 @@ PRTreturn(node *arg_node, info *arg_info)
 
   printf("return ");
   RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
-  printf(";\n");
+  printf(";");
 
   DBUG_RETURN(arg_node);
 }
@@ -313,11 +337,11 @@ PRTfundef(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTfundef");
 
-  printf("%d ", FUNDEF_TYPE(arg_node));
+  TypePrinter(FUNDEF_TYPE(arg_node));
   printf("%s", FUNDEF_NAME(arg_node));
 
   printf("(");
-  FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
+  FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
   printf(")");
 
   printf("{");
@@ -371,18 +395,15 @@ PRTifelse(node *arg_node, info *arg_info)
   DBUG_ENTER("PRTifelse");
 
   printf("if");
-  printf("(");
   IFELSE_COND(arg_node) = TRAVdo(IFELSE_COND(arg_node), arg_info);
-  printf(")");
-
-  IFELSE_THEN(arg_node) = TRAVopt(IFELSE_THEN(arg_node), arg_info);
   printf("{");
-  printf("}\n");
-
+  IFELSE_THEN(arg_node) = TRAVopt(IFELSE_THEN(arg_node), arg_info);
+  printf("}");
+  
   if (IFELSE_ELSE(arg_node) != NULL) {
       printf("else {");
       IFELSE_ELSE(arg_node) = TRAVopt(IFELSE_ELSE(arg_node), arg_info);
-      printf("}\n");
+      printf("}");
   }
 
 
@@ -407,14 +428,13 @@ PRTdowhile(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTdowhile");
 
-  printf("do while");
-  printf("(");
-  DOWHILE_COND(arg_node) = TRAVdo(DOWHILE_COND(arg_node),arg_info);
-  printf(")\n");
-
+  printf("do");
   printf("{");
   DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
   printf("}\n");
+  printf("while");
+  DOWHILE_COND(arg_node) = TRAVdo(DOWHILE_COND(arg_node),arg_info);
+
 
   DBUG_RETURN(arg_node);
 }
@@ -438,9 +458,9 @@ PRTfor(node *arg_node, info *arg_info)
   DBUG_ENTER("PRTfor");
 
   printf("for");
-  printf("( int");
+  printf("(int ");
   FOR_START(arg_node) = TRAVdo(FOR_START(arg_node),arg_info);
-  printf(",");
+  printf(", ");
   FOR_STOP(arg_node) = TRAVdo(FOR_STOP(arg_node),arg_info);
 
   if (FOR_STEP(arg_node) != NULL) {
@@ -451,7 +471,7 @@ PRTfor(node *arg_node, info *arg_info)
 
   printf("{");
   FOR_BLOCK(arg_node) = TRAVopt(FOR_BLOCK(arg_node),arg_info);
-  printf("}\n");
+  printf("}");
 
   DBUG_RETURN(arg_node);
 }
@@ -476,7 +496,7 @@ PRTglobdecl(node *arg_node, info *arg_info)
 
   GLOBDECL_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
   printf("extern ");
-  printf("%d ", GLOBDECL_TYPE(arg_node));
+  TypePrinter(GLOBDECL_TYPE(arg_node));
   printf("%s", GLOBDECL_NAME(arg_node));
   printf(";\n");
   DBUG_RETURN(arg_node);
@@ -531,7 +551,7 @@ PRTparam(node *arg_node, info *arg_info)
   PARAM_DIMS(arg_node) = TRAVopt(PARAM_DIMS(arg_node),arg_info);
   PARAM_NEXT(arg_node) = TRAVopt(PARAM_DIMS(arg_node), arg_info);
 
-  printf("%d ", PARAM_TYPE(arg_node));
+  TypePrinter(PARAM_TYPE(arg_node));
   printf("%s", PARAM_NAME(arg_node));
 
   DBUG_RETURN(arg_node);
@@ -555,15 +575,17 @@ PRTvardecl(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTvardecl");
 
-  printf("%d ", VARDECL_TYPE(arg_node));
+  TypePrinter( VARDECL_TYPE(arg_node));
   printf("%s", VARDECL_NAME(arg_node));
-  printf("[ =");
+  if (VARDECL_INIT(arg_node) != NULL) {
+      printf(" = ");
+     VARDECL_INIT(arg_node) = TRAVopt(VARDECL_INIT(arg_node), arg_info);
+  }
+  printf(";");
 
   VARDECL_DIMS(arg_node) = TRAVopt(VARDECL_DIMS(arg_node), arg_info);
-  VARDECL_INIT(arg_node) = TRAVopt(VARDECL_INIT(arg_node), arg_info);
   VARDECL_NEXT(arg_node) = TRAVopt(VARDECL_NEXT(arg_node), arg_info);
 
-  printf("] ;\n");
 
   DBUG_RETURN(arg_node);
 }
@@ -610,9 +632,8 @@ PRTwhile(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTwhile");
 
-  printf("while (");
+  printf("while");
   WHILE_COND(arg_node) = TRAVdo(WHILE_COND(arg_node), arg_info);
-  printf(")");
   printf("{");
 
   WHILE_BLOCK(arg_node)= TRAVopt(WHILE_BLOCK(arg_node),arg_info);
@@ -681,7 +702,7 @@ PRTassign(node *arg_node, info *arg_info)
 
   ASSIGN_EXPR(arg_node) = TRAVdo(ASSIGN_EXPR(arg_node), arg_info);
 
-  printf(";\n");
+  printf(";");
 
   DBUG_RETURN(arg_node);
 }
