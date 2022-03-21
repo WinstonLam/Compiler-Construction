@@ -263,7 +263,7 @@ block: BRACES_L stmts BRACES_R
 
 stmts: stmt stmts
       {
-        $$ = TBmakeStmts( $2, $1);
+        $$ = TBmakeStmts( $1, $2);
       }
       | stmt
       {
@@ -311,7 +311,7 @@ assign: varlet LET expr SEMICOLON
       }
       ;
 
-exprstmts: ID BRACKET_L stmts BRACKET_R SEMICOLON
+exprstmts: ID BRACKET_L exprs BRACKET_R SEMICOLON
       {
         $$ = TBmakeExprstmt($3);
       }
@@ -359,7 +359,7 @@ return: RETURN SEMICOLON
       }
       ;
 
-varlet: constant
+varlet: ID
       {
         $$ = TBmakeVarlet(STRcpy($1), NULL, NULL);     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
       }

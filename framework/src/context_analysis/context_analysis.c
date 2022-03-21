@@ -23,10 +23,18 @@
 #include "memory.h"
 
 
+
 /*
  * Traversal functions
  */
-
+// Traversal to store varlets
+node *CAvarlet( node *arg_node, info *arg_info)
+{
+}
+// Traversal to store var
+node *CAvar( node *arg_node, info *arg_info)
+{
+}
 /*
  * Traversal start function
  */
