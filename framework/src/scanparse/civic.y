@@ -275,7 +275,7 @@ stmts: stmt stmts
       }
       ;
 
- stmt: assign
+stmt: assign
       {
           $$ = $1;
       }
@@ -361,17 +361,17 @@ return: RETURN SEMICOLON
 
 varlet: constant
       {
-         $$ = $1;     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
+        $$ = TBmakeVarlet(STRcpy($1), NULL, NULL);     //Hoe moeten deze opgesteld worden wat zijn de decl en indices?
       }
       ;
 
- floatval: FLOAT
+floatval: FLOAT
       {
         $$ = TBmakeFloat( $1);
       }
       ;
 
- intval: NUM
+intval: NUM
       {
         $$ = TBmakeNum( $1);
       }
