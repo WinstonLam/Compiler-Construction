@@ -83,6 +83,9 @@ static void InsertEntry (info *arg_info, node *entry) {
     // next pointer of the tail node to this current node
     node *temp = INFO_SYMBOLTABLE(arg_info);
     while (SYMBOLENTRY_NEXT(temp) != NULL) {
+      if(SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry) ){
+        return CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(entry));
+      }
       temp = SYMBOLENTRY_NEXT(temp);
     }
     SYMBOLENTRY_NEXT(temp) = entry;
