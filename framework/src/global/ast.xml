@@ -31,6 +31,8 @@
        <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
        <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
         <travuser>
+            <node name="Fundef" />
+            <node name="Vardecl"/>
         </travuser>
       </traversal>
 
@@ -303,6 +305,16 @@
     </node>
     <node name="FunDef">
         <sons>
+            <son name="SymbolEntry">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="FunBody">
                 <targets>
                     <target mandatory="no">
@@ -353,6 +365,46 @@
         <flags>
             <flag name="IsExport" />
         </flags>
+    </node>
+    <node name="SymbolEntry">
+        <sons>
+            <son name="Next">
+                <targets>
+                    <target mandatory ="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+        </sons>
+        <attributes>
+            <attribute name="Type">
+                <type name="Type">
+                    <targets>
+                        <target mandatory="yes">
+                            <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="Name">
+                <type name="String">
+                    <targets>
+                        <target mandatory="yes">
+                            <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+        </attributes>
     </node>
     <node name="FunBody">
         <sons>
