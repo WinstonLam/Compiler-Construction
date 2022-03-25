@@ -19,7 +19,7 @@
 #include "lookup_table.h"
 #include "traverse.h"
 #include "dbug.h"
-
+#include "ctinfo.h"
 #include "str.h"
 #include "string.h"
 #include "memory.h"
@@ -74,7 +74,7 @@ static info *FreeInfo( info *info)
 *   to which we will start appending nodes
 */
 
-static void InsertEntry (info *arg_info, node *entry) {
+static int InsertEntry (info *arg_info, node *entry) {
   // if symboltable is empty then change table pointer to current node
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
     INFO_SYMBOLTABLE(arg_info) = entry;
@@ -84,12 +84,13 @@ static void InsertEntry (info *arg_info, node *entry) {
     node *temp = INFO_SYMBOLTABLE(arg_info);
     while (SYMBOLENTRY_NEXT(temp) != NULL) {
       if(SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry) ){
-        return CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(entry));
+        return 1;
       }
       temp = SYMBOLENTRY_NEXT(temp);
     }
     SYMBOLENTRY_NEXT(temp) = entry;
   }
+  return 0;
 }
 
 node *CAfundef (node *arg_node, info *arg_info)
@@ -100,16 +101,19 @@ node *CAfundef (node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),FUNDEF_NAME(arg_node), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
+  if (InsertEntry(arg_info, new) == 1) {
+    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
+    DBUG_RETURN( arg_node);
+  };
 
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
-  // reset the symbol table to NULL for one scope deeper to start with fresh symbol table.
+  // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
   INFO_SYMBOLTABLE(arg_info) = NULL;
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
-  // link these lower level scope symboltables to their corresponding fundefs
+  // link these lower level scope symboltables to their corresponding node
   node *localtable = INFO_SYMBOLTABLE( arg_info);
   FUNDEF_SYMBOLENTRY(arg_node) = localtable;
 
@@ -117,8 +121,6 @@ node *CAfundef (node *arg_node, info *arg_info)
   INFO_SYMBOLTABLE(arg_info) = globaltable;
   DBUG_RETURN( arg_node);
 }
-
-
 
 node *CAvardecl(node *arg_node, info *arg_info)
 {
@@ -128,12 +130,37 @@ node *CAvardecl(node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), VARDECL_NAME(arg_node), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
+  if (InsertEntry(arg_info, new) == 1) {
+    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
+    DBUG_RETURN( arg_node);
+  };
 
   DBUG_RETURN( arg_node);
 }
 
+node *CAfor(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAfor");
 
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
+
+  // store the global scope symboltable in place to first traverse into the forbody.
+  node *globaltable = INFO_SYMBOLTABLE( arg_info);
+  // set the symbol table to for loop initializing value for the forloop block
+
+
+  // traverse into the funbody to create lower level scope symboltables for the body
+  TRAVopt(FOR_BLOCK(arg_node),arg_info);
+  // link these lower level scope symboltables to their corresponding node
+  node *localtable = INFO_SYMBOLTABLE( arg_info);
+  FOR_SYMBOLENTRY(arg_node) = localtable;
+
+  // reset global scope symboltable
+  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  DBUG_RETURN( arg_node);
+
+}
 
 /*
  * Traversal start function

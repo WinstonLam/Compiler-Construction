@@ -365,7 +365,7 @@
             <flag name="IsExport" />
         </flags>
     </node>
-    <node name="SymbolEntry"> 
+    <node name="SymbolEntry">
         <sons>
             <son name="Next">
                 <targets>
