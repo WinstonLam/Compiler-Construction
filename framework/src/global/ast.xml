@@ -29,12 +29,13 @@
       <traversal id="CHK" name="Check Syntax Tree" default="user" include="check.h" />
 
        <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
+       <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
         <travuser>
         </travuser>
       </traversal>
 
     </general>
-  
+
 </phases>
 <nodesets>
     <nodeset name="Expr">
