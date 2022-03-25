@@ -6,7 +6,7 @@
  *
  * Description:
  *
- * This module implements a context analysis of the abstract syntax tree that 
+ * This module implements a context analysis of the abstract syntax tree that
  * stores any variable found into the symbol table.
  *
  *****************************************************************************/
@@ -16,10 +16,12 @@
 
 #include "types.h"
 #include "tree_basic.h"
+#include "lookup_table.h"
 #include "traverse.h"
 #include "dbug.h"
-
+#include "ctinfo.h"
 #include "str.h"
+#include "string.h"
 #include "memory.h"
 
 
@@ -28,98 +30,136 @@
  */
 
 struct INFO {
-  lut_t *lut;
-};
-
-struct entry{
-  char *name;
-  char *type;
-  int level;
+  node *symboltable;
 };
 
 /*
  * INFO macros
  */
 
-#define INFO_LUT(n)  ((n)->lut)
+#define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 
 /*
  * INFO functions
  */
 
-static info *MakeSymboltable(void)
+static info *MakeInfo(void)
 {
-  
-  info *symboltable;
+  info *tables;
 
-  DBUG_ENTER( "MakeSymboltable");
+  DBUG_ENTER( "MakeInfo");
 
-  symboltable = (info *)MEMmalloc(sizeof(info));
+  tables = (info *)MEMmalloc(sizeof(info));
 
+  INFO_SYMBOLTABLE( tables) = NULL;
 
-  INFO_LUT(symboltable) = LUTgenerateLut();
-
-
-  DBUG_RETURN( symboltable);
+  DBUG_RETURN( tables);
 }
 
-static info *FreeSymboltable( info *info)
+static info *FreeInfo( info *info)
 {
-  DBUG_ENTER ("FreeSymboltable");
+  DBUG_ENTER ("FreeInfo");
 
-  INFO_LUT( info) = LUTremoveLut( INFO_LUT( info));
-  info = MEMfree (info);
+  info = MEMfree( info);
 
-  DBUG_RETURN (info);
+  DBUG_RETURN( info);
 }
+
 /*
  * Traversal functions
  */
-// This function creates a new entry given the type name and level
-static struct value *MakeEntry (char *name, char *type, long level) {
 
-  struct entry *new = (struct entry *)MEMmalloc(sizeof(struct entry));
-  new->name = name;
-  new->type = type;
-  new->level = level;
+/*  Whenever we encounter a fundef, update the symboltable
+*   pointer inside the info struct to point to the current fundef
+*   to which we will start appending nodes
+*/
 
-  return new;
+static int InsertEntry (info *arg_info, node *entry) {
+  // if symboltable is empty then change table pointer to current node
+  if (INFO_SYMBOLTABLE(arg_info) == NULL) {
+    INFO_SYMBOLTABLE(arg_info) = entry;
+  } else {
+    // if there is something in the symbol table already then set the
+    // next pointer of the tail node to this current node
+    node *temp = INFO_SYMBOLTABLE(arg_info);
+    while (SYMBOLENTRY_NEXT(temp) != NULL) {
+      if(SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry) ){
+        return 1;
+      }
+      temp = SYMBOLENTRY_NEXT(temp);
+    }
+    SYMBOLENTRY_NEXT(temp) = entry;
+  }
+  return 0;
 }
 
-// This function renames a given variable by adding the level to it
-static char* rename(char *name, long level)
+node *CAfundef (node *arg_node, info *arg_info)
 {
-  char *lvl;
-  sprintf(lvl, "%d", level);
+  DBUG_ENTER("CAfundef");
 
-  // is het mallocen van een nieuwe char pointer nodig?
-  // char *new_name = (char*)malloc(1+strlen(name)+strlen(lvl));
-  char *new_name;
-  strcpy(new_name, name);
-  strcat(new_name, lvl);
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),FUNDEF_NAME(arg_node), NULL);
 
-  return new_name;
+  // use the InsertEntry function to insert the new node into the symboltable
+  if (InsertEntry(arg_info, new) == 1) {
+    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
+    DBUG_RETURN( arg_node);
+  };
+
+  // store the global scope symboltable in place to first traverse into the funbody.
+  node *globaltable = INFO_SYMBOLTABLE( arg_info);
+  // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
+  INFO_SYMBOLTABLE(arg_info) = NULL;
+
+  // traverse into the funbody to create lower level scope symboltables for the body
+  TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
+  // link these lower level scope symboltables to their corresponding node
+  node *localtable = INFO_SYMBOLTABLE( arg_info);
+  FUNDEF_SYMBOLENTRY(arg_node) = localtable;
+
+  // reset global scope symboltable
+  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  DBUG_RETURN( arg_node);
 }
 
-node *CAvardecl(node* arg_node, info *arg_info)
+node *CAvardecl(node *arg_node, info *arg_info)
 {
-DBUG_ENTER("CAvardecl");
-  
-  lut_t *lut = INFO_LUT(arg_info);
-  
-  // Get the name adjusted for level with the rename function.
-  char *leveled_name = rename(VARDECL_ID(arg_node), 0);
+  DBUG_ENTER("CAvardecl");
 
-  void **lookup = LUTsearchInLutS(lut, leveled_name);
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), VARDECL_NAME(arg_node), NULL);
 
-  // Search if arg_node is already in the lut.
-  if (lookup == NULL) {
+  // use the InsertEntry function to insert the new node into the symboltable
+  if (InsertEntry(arg_info, new) == 1) {
+    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
+    DBUG_RETURN( arg_node);
+  };
 
-    // If not in LUT create a new value node to insert.
-    struct entry *new = Makenode(VARDECL_ID(arg_node), VARDECL_TYPE(arg_node), 0 );
+  DBUG_RETURN( arg_node);
+}
 
-    // Insert the new value node into the LUT.
-    LUTinsertIntoLutS(lut, leveled_name, new);
+node *CAfor(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAfor");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
+
+  // store the global scope symboltable in place to first traverse into the forbody.
+  node *globaltable = INFO_SYMBOLTABLE( arg_info);
+  // set the symbol table to for loop initializing value for the forloop block
+
+
+  // traverse into the funbody to create lower level scope symboltables for the body
+  TRAVopt(FOR_BLOCK(arg_node),arg_info);
+  // link these lower level scope symboltables to their corresponding node
+  node *localtable = INFO_SYMBOLTABLE( arg_info);
+  FOR_SYMBOLENTRY(arg_node) = localtable;
+
+  // reset global scope symboltable
+  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  DBUG_RETURN( arg_node);
+
 }
 
 /*
@@ -130,11 +170,17 @@ node *CAdoContextAnalysis( node *syntaxtree)
 {
   DBUG_ENTER("CAdoContextAnalysis");
 
+  info *arg_info;
+
+  arg_info = MakeInfo();
+
   TRAVpush( TR_ca);   // Push traversal "ca" as defined in ast.xml
 
   syntaxtree = TRAVdo( syntaxtree, NULL);   // Initiate ast traversal
 
   TRAVpop();          // Pop current traversal
+
+  arg_info = FreeInfo( arg_info);
 
   DBUG_RETURN( syntaxtree);
 }

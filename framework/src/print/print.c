@@ -117,6 +117,33 @@ PRTdecls(node *arg_node, info *arg_info)
 
   DBUG_RETURN(arg_node);
 }
+/** <!--******************************************************************-->
+ *
+ * @fn PRTsymbolentry
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node symbolentry node to process
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+
+node *
+PRTsymbolentry(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("PRTsymbolentry");
+
+  SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
+
+  TypePrinter(SYMBOLENTRY_TYPE(arg_node));
+
+  printf("%s ", SYMBOLENTRY_NAME(arg_node));
+
+
+  DBUG_RETURN(arg_node);
+}
 
 /** <!--******************************************************************-->
  *
@@ -904,26 +931,6 @@ PRTvarlet(node *arg_node, info *arg_info)
   DBUG_ENTER("PRTvarlet");
 
   printf("%s", VARLET_NAME(arg_node));
-
-  DBUG_RETURN(arg_node);
-}
-
-/** <!--******************************************************************-->
- *
- * @fn PRTsymboltableentry
- *
- * @brief Prints the node and its sons/attributes
- *
- * @param arg_node letrec node to process
- * @param arg_info pointer to info structure
- *
- * @return processed node
- *
- ***************************************************************************/
-
-node *PRTsymboltableentry(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("PRTsymboltableentry");
 
   DBUG_RETURN(arg_node);
 }
