@@ -31,6 +31,6 @@ int ReturnTest() {
 
 int Test() {
     int p = 3;
-    int p1 = 3;
+    int p = 3;
 
 }

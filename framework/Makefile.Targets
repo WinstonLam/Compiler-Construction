@@ -79,4 +79,4 @@ print       = print.o
 
 codegen     = gen_byte_code.o
 
-context_analysis = context_analysis.o
+context_analysis = context_analysis.o symboltable_linker.o

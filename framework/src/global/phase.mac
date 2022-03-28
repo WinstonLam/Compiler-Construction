@@ -37,7 +37,13 @@ PHASE( pet,
 SUBPHASE( ca,
           "Context analysis",
           CAdoContextAnalysis,
-          NEVER,
+          ALWAYS,
+          pet)
+
+SUBPHASE( sl,
+          "Symboltable linker",
+          SLdoSymboltableLinker,
+          ALWAYS,
           pet)
 
 ENDPHASE( pet)

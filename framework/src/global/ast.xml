@@ -32,6 +32,16 @@
         <travuser>
             <node name="Fundef" />
             <node name="Vardecl"/>
+            <node name="For"/>
+        </travuser>
+      </traversal>
+
+      <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
+        <travuser>
+            <node name="Program" />
+            <node name="Fundef" />
+            <node name="Vardecl"/>
+            <node name="For"/>
         </travuser>
       </traversal>
 
@@ -75,6 +85,16 @@
 <syntaxtree>
     <node name="Program">
         <sons>
+            <son name="SymbolEntry">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Decls">
                 <targets>
                     <target mandatory="yes">
@@ -304,6 +324,16 @@
     </node>
     <node name="FunDef">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="SymbolEntry">
                 <targets>
                     <target mandatory="no">
@@ -404,6 +434,24 @@
                 </type>
             </attribute>
         </attributes>
+    </node>
+    <node name="TableLink">
+        <sons>
+            <son name="SymbolEntry">
+                <targets>
+                    <target mandatory ="yes">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+        </sons>
+    <attributes>
+    </attributes>
+    <flags>
+    </flags>
     </node>
     <node name="FunBody">
         <sons>
@@ -539,6 +587,16 @@
     </node>
     <node name="For">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Start">
                 <targets>
                     <target mandatory="yes">
@@ -744,6 +802,16 @@
     </node>
     <node name="VarDecl">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Dims">
                 <targets>
                     <target mandatory="no">

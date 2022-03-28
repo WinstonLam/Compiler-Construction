@@ -47,5 +47,6 @@ extern node *PRTparam(node *arg_node, info *arg_info);
 extern node *PRTvardecl(node *arg_node, info *arg_info);
 extern node *PRTmonop(node *arg_node, info *arg_info);
 extern node *PRTsymbolentry(node *arg_node, info *arg_info);
+extern node *PRTtablelink(node *arg_node, info *arg_info);
 
 #endif /* _SAC_PRT_NODE_H_ */
