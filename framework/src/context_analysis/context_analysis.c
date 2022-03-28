@@ -140,25 +140,25 @@ node *CAvardecl(node *arg_node, info *arg_info)
 
 node *CAfor(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("CAfor");
+  // DBUG_ENTER("CAfor");
 
-  // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
+  // // create new node to add to symboltable
+  // node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
 
-  // store the global scope symboltable in place to first traverse into the forbody.
-  node *globaltable = INFO_SYMBOLTABLE( arg_info);
-  // set the symbol table to for loop initializing value for the forloop block
+  // // store the global scope symboltable in place to first traverse into the forbody.
+  // node *globaltable = INFO_SYMBOLTABLE( arg_info);
+  // // set the symbol table to for loop initializing value for the forloop block
 
 
-  // traverse into the funbody to create lower level scope symboltables for the body
-  TRAVopt(FOR_BLOCK(arg_node),arg_info);
-  // link these lower level scope symboltables to their corresponding node
-  node *localtable = INFO_SYMBOLTABLE( arg_info);
-  FOR_SYMBOLENTRY(arg_node) = localtable;
+  // // traverse into the funbody to create lower level scope symboltables for the body
+  // TRAVopt(FOR_BLOCK(arg_node),arg_info);
+  // // link these lower level scope symboltables to their corresponding node
+  // node *localtable = INFO_SYMBOLTABLE( arg_info);
+  // FOR_SYMBOLENTRY(arg_node) = localtable;
 
-  // reset global scope symboltable
-  INFO_SYMBOLTABLE(arg_info) = globaltable;
-  DBUG_RETURN( arg_node);
+  // // reset global scope symboltable
+  // INFO_SYMBOLTABLE(arg_info) = globaltable;
+  // DBUG_RETURN( arg_node);
 
 }
 

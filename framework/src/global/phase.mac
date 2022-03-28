@@ -40,7 +40,15 @@ SUBPHASE( ca,
           NEVER,
           pet)
 
+
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
+          NEVER,
+          pet)
+
 ENDPHASE( pet)
+
 
 /******************************************************************************/
 
