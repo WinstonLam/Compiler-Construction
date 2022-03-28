@@ -68,70 +68,70 @@ static info *FreeInfo( info *info)
  * Helper Functions
  */
 
-// Typeprinter that given an enum type returns a *char
-static char *TypePrinter(type types)
-{
-  char *typename;
-  switch (types)
-  {
-    case T_void:
-      strcpy(typename, "_void");
-      break;
-    case T_bool:
-      strcpy(typename, "_bool");
-      break;
-    case T_int:
-      strcpy(typename, "_int");
-      break;
-    case T_float:
-      strcpy(typename, "_float");
-      break;
-    case T_unknown:
-      DBUG_ASSERT(0, "unknown type detected!");
-      break;
-  }
-  return typename;
-}
+// // Typeprinter that given an enum type returns a *char
+// static char *TypePrinter(type types)
+// {
+//   char *typename;
+//   switch (types)
+//   {
+//     case T_void:
+//       strcpy(typename, "_void");
+//       break;
+//     case T_bool:
+//       strcpy(typename, "_bool");
+//       break;
+//     case T_int:
+//       strcpy(typename, "_int");
+//       break;
+//     case T_float:
+//       strcpy(typename, "_float");
+//       break;
+//     case T_unknown:
+//       DBUG_ASSERT(0, "unknown type detected!");
+//       break;
+//   }
+//   return typename;
+// }
 
 
-// function to rename variables with different types but same name
-static void RenameCheck(info *arg_info, node *entry) {
-  DBUG_ENTER("RenameCheck");
-  // if symboltable is empty then no rename is needed
-  if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    return;
-  }
-  // traverse through the symbol table till the end,
-  // if variable is already in the table assert error. if
-  // variables have same name but different types then rename.
-  node *temp = INFO_SYMBOLTABLE(arg_info);
-  while (SYMBOLENTRY_NEXT(temp) != NULL) {
-    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)) &&
-        SYMBOLENTRY_TYPE(temp) == SYMBOLENTRY_TYPE(entry))
-        {
-        CTInote("test");
-        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
-        }
-    // if variables have the same name, but different types then preform a rename
-    // where the name will be extended with the type as such: int i -> i_int
-    else if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
-        {
-        // store the current names in temp values and free the current names of both variables later
-        char *currname_temp = STRcpy(SYMBOLENTRY_NAME(temp));
-        char *currname_entry = STRcpy(SYMBOLENTRY_NAME(entry));
+// // function to rename variables with different types but same name
+// static void RenameCheck(info *arg_info, node *entry) {
+//   DBUG_ENTER("RenameCheck");
+//   // if symboltable is empty then no rename is needed
+//   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
+//     return;
+//   }
+//   // traverse through the symbol table till the end,
+//   // if variable is already in the table assert error. if
+//   // variables have same name but different types then rename.
+//   node *temp = INFO_SYMBOLTABLE(arg_info);
+//   while (SYMBOLENTRY_NEXT(temp) != NULL) {
+//     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)) &&
+//         SYMBOLENTRY_TYPE(temp) == SYMBOLENTRY_TYPE(entry))
+//         {
+//         CTInote("test");
+//         DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+//         }
+//     // if variables have the same name, but different types then preform a rename
+//     // where the name will be extended with the type as such: int i -> i_int
+//     else if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+//         {
+//         // store the current names in temp values and free the current names of both variables later
+//         char *currname_temp = STRcpy(SYMBOLENTRY_NAME(temp));
+//         char *currname_entry = STRcpy(SYMBOLENTRY_NAME(entry));
 
-        // store the type adjusted names for both variables
-        // use the typeprinter to get a *char based on the type then STRcat
-        // both *char to a new one
-        SYMBOLENTRY_NAME(temp) = STRcat(currname_temp, TypePrinter(SYMBOLENTRY_TYPE(temp)));
-        SYMBOLENTRY_NAME(entry) = STRcat(currname_entry, TypePrinter(SYMBOLENTRY_TYPE(entry)));
+//         // store the type adjusted names for both variables
+//         // use the typeprinter to get a *char based on the type then STRcat
+//         // both *char to a new one
+//         SYMBOLENTRY_NAME(temp) = STRcat(currname_temp, TypePrinter(SYMBOLENTRY_TYPE(temp)));
+//         SYMBOLENTRY_NAME(entry) = STRcat(currname_entry, TypePrinter(SYMBOLENTRY_TYPE(entry)));
 
-        MEMfree(currname_temp);
-        MEMfree(currname_entry);
-        }
-      temp = SYMBOLENTRY_NEXT(temp);
-    }
-}
+//         MEMfree(currname_temp);
+//         MEMfree(currname_entry);
+//         }
+//       temp = SYMBOLENTRY_NEXT(temp);
+//     }
+// }
 
 // function that given an node puts it in the symboltable adjusted for name if needed
 static void InsertEntry (info *arg_info, node *entry) {
@@ -141,16 +141,17 @@ static void InsertEntry (info *arg_info, node *entry) {
     INFO_SYMBOLTABLE(arg_info) = entry;
   }
 
-  // perfrom rename check to check for
-  // variables of differnt type with same name
-  RenameCheck(arg_info, entry);
-
-  // if there is something in the symbol table already then set the
-  // next pointer of the tail node to this current node
+  // traverse through the symbol table till the end,
+  // if variable is already in the table assert error.
   node *temp = INFO_SYMBOLTABLE(arg_info);
   while (SYMBOLENTRY_NEXT(temp) != NULL) {
+    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+        {
+        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        break; // hoe moet ik error returnen
+        }
     temp = SYMBOLENTRY_NEXT(temp);
-  }
+    }
   SYMBOLENTRY_NEXT(temp) = entry;
 }
 
@@ -235,8 +236,8 @@ node *CAdoContextAnalysis( node *syntaxtree)
   TRAVpush( TR_ca);   // Push traversal "ca" as defined in ast.xml
   syntaxtree = TRAVdo( syntaxtree, arg_info);   // Initiate ast traversal
 
-  // add symbol table to the program scope
-  PROGRAM_SYMBOLENTRY(syntaxtree) = INFO_SYMBOLTABLE(arg_info);
+  // // add symbol table to the program scope
+   PROGRAM_SYMBOLENTRY(syntaxtree) = INFO_SYMBOLTABLE(arg_info);
 
   if (syntaxtree != NULL) {
     CTInote("syntaxtree is not NULL");
@@ -247,3 +248,4 @@ node *CAdoContextAnalysis( node *syntaxtree)
 
   DBUG_RETURN( syntaxtree);
 }
+
