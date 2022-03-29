@@ -16,7 +16,6 @@
 
 #include "types.h"
 #include "tree_basic.h"
-#include "lookup_table.h"
 #include "traverse.h"
 #include "dbug.h"
 #include "ctinfo.h"
@@ -66,45 +65,140 @@ static info *FreeInfo( info *info)
 }
 
 /*
- * Traversal functions
+ * Helper Functions
  */
 
-/*  Whenever we encounter a fundef, update the symboltable
-*   pointer inside the info struct to point to the current fundef
-*   to which we will start appending nodes
-*/
+// // Typeprinter that given an enum type returns a *char
+// static char *TypePrinter(type types)
+// {
+//   char *typename;
+//   switch (types)
+//   {
+//     case T_void:
+//       strcpy(typename, "_void");
+//       break;
+//     case T_bool:
+//       strcpy(typename, "_bool");
+//       break;
+//     case T_int:
+//       strcpy(typename, "_int");
+//       break;
+//     case T_float:
+//       strcpy(typename, "_float");
+//       break;
+//     case T_unknown:
+//       DBUG_ASSERT(0, "unknown type detected!");
+//       break;
+//   }
+//   return typename;
+// }
 
-static int InsertEntry (info *arg_info, node *entry) {
+
+// // function to rename variables with different types but same name
+// static void RenameCheck(info *arg_info, node *entry) {
+//   DBUG_ENTER("RenameCheck");
+//   // if symboltable is empty then no rename is needed
+//   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
+//     return;
+//   }
+//   // traverse through the symbol table till the end,
+//   // if variable is already in the table assert error. if
+//   // variables have same name but different types then rename.
+//   node *temp = INFO_SYMBOLTABLE(arg_info);
+//   while (SYMBOLENTRY_NEXT(temp) != NULL) {
+//     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)) &&
+//         SYMBOLENTRY_TYPE(temp) == SYMBOLENTRY_TYPE(entry))
+//         {
+//         CTInote("test");
+//         DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+//         }
+//     // if variables have the same name, but different types then preform a rename
+//     // where the name will be extended with the type as such: int i -> i_int
+//     else if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+//         {
+//         // store the current names in temp values and free the current names of both variables later
+//         char *currname_temp = STRcpy(SYMBOLENTRY_NAME(temp));
+//         char *currname_entry = STRcpy(SYMBOLENTRY_NAME(entry));
+
+//         // store the type adjusted names for both variables
+//         // use the typeprinter to get a *char based on the type then STRcat
+//         // both *char to a new one
+//         SYMBOLENTRY_NAME(temp) = STRcat(currname_temp, TypePrinter(SYMBOLENTRY_TYPE(temp)));
+//         SYMBOLENTRY_NAME(entry) = STRcat(currname_entry, TypePrinter(SYMBOLENTRY_TYPE(entry)));
+
+//         MEMfree(currname_temp);
+//         MEMfree(currname_entry);
+//         }
+//       temp = SYMBOLENTRY_NEXT(temp);
+//     }
+// }
+
+// function that given an node puts it in the symboltable
+static info *InsertEntry (info *arg_info, node *entry) {
+  DBUG_ENTER("InsertEntry");
+
   // if symboltable is empty then change table pointer to current node
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    INFO_SYMBOLTABLE(arg_info) = entry;
-  } else {
-    // if there is something in the symbol table already then set the
-    // next pointer of the tail node to this current node
-    node *temp = INFO_SYMBOLTABLE(arg_info);
-    while (SYMBOLENTRY_NEXT(temp) != NULL) {
-      if(SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry) ){
-        return 1;
-      }
-      temp = SYMBOLENTRY_NEXT(temp);
-    }
-    SYMBOLENTRY_NEXT(temp) = entry;
+      INFO_SYMBOLTABLE(arg_info) = entry;
+      DBUG_RETURN(arg_info);
   }
-  return 0;
+
+  // traverse through the symbol table till the end,
+  // if variable is already in the table assert error.
+  node *temp = INFO_SYMBOLTABLE(arg_info);
+  while (SYMBOLENTRY_NEXT(temp)) {
+    if (SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry))
+        {
+        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        DBUG_RETURN(arg_info);
+        break; // hoe moet ik error returnen
+        }
+    if (SYMBOLENTRY_NEXT(temp) != NULL) {
+        temp = SYMBOLENTRY_NEXT(temp);
+        }
+    }
+
+  // insert entry at end of symboltable but check on last entry aswell
+  if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+      {
+        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        DBUG_RETURN(arg_info);
+      }
+  SYMBOLENTRY_NEXT(temp) = entry;
+  DBUG_RETURN(arg_info);
 }
+
+/*
+ * Traversal Functions
+ */
+
+// node *CAprogram (node *arg_node, info *arg_info) 
+// {
+//   DBUG_ENTER("CAprogram");
+
+// }
+node *CAglobdecl (node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAglobdecl");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(GLOBDECL_TYPE(arg_node), STRcpy(GLOBDECL_NAME(arg_node)), NULL);
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new);
+
+  DBUG_RETURN( arg_node);
+}
+
 
 node *CAfundef (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfundef");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),FUNDEF_NAME(arg_node), NULL);
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
-  if (InsertEntry(arg_info, new) == 1) {
-    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
-    DBUG_RETURN( arg_node);
-  };
+  InsertEntry(arg_info, new);
 
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
@@ -122,42 +216,41 @@ node *CAfundef (node *arg_node, info *arg_info)
   DBUG_RETURN( arg_node);
 }
 
+
 node *CAvardecl(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvardecl");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), VARDECL_NAME(arg_node), NULL);
-
+  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
-  if (InsertEntry(arg_info, new) == 1) {
-    CTInote( "Multiple declarations of: %s", SYMBOLENTRY_NAME(new));
-    DBUG_RETURN( arg_node);
-  };
+  InsertEntry(arg_info, new);
 
+  // search for next vardecl if there.
+  TRAVopt(VARDECL_NEXT(arg_node), arg_info);
   DBUG_RETURN( arg_node);
 }
+
 
 node *CAfor(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfor");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
+  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
 
-  // store the global scope symboltable in place to first traverse into the forbody.
-  node *globaltable = INFO_SYMBOLTABLE( arg_info);
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new);
+
+  // store the innermost function scope symboltable in place to first traverse into the forbody.
+  node *uppertable = INFO_SYMBOLTABLE( arg_info);
   // set the symbol table to for loop initializing value for the forloop block
-
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FOR_BLOCK(arg_node),arg_info);
-  // link these lower level scope symboltables to their corresponding node
-  node *localtable = INFO_SYMBOLTABLE( arg_info);
-  FOR_SYMBOLENTRY(arg_node) = localtable;
 
   // reset global scope symboltable
-  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  INFO_SYMBOLTABLE(arg_info) = uppertable;
   DBUG_RETURN( arg_node);
 
 }
@@ -168,15 +261,17 @@ node *CAfor(node *arg_node, info *arg_info)
 
 node *CAdoContextAnalysis( node *syntaxtree)
 {
-  DBUG_ENTER("CAdoContextAnalysis");
-
   info *arg_info;
+
+  DBUG_ENTER("CAdoContextAnalysis");
 
   arg_info = MakeInfo();
 
   TRAVpush( TR_ca);   // Push traversal "ca" as defined in ast.xml
+  syntaxtree = TRAVdo( syntaxtree, arg_info);   // Initiate ast traversal
 
-  syntaxtree = TRAVdo( syntaxtree, NULL);   // Initiate ast traversal
+  // // add symbol table to the program scope
+   PROGRAM_SYMBOLENTRY(syntaxtree) = INFO_SYMBOLTABLE(arg_info);
 
   TRAVpop();          // Pop current traversal
 
@@ -184,3 +279,4 @@ node *CAdoContextAnalysis( node *syntaxtree)
 
   DBUG_RETURN( syntaxtree);
 }
+

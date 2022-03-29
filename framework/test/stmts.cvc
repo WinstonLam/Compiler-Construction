@@ -53,6 +53,7 @@ int Return() {
 
 int Variables() {
     int p = 3;
+    int p = 3;
     int p1 = 3;
 }
 
