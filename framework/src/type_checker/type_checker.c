@@ -28,7 +28,7 @@
  */
 
 struct INFO {
-  node symboltable;
+  node *symboltable;
 };
 
 /*
@@ -81,7 +81,7 @@ node *TCfundef(node *arg_node, info *arg_info)
 
   // set the symbol table to symbol table of the corresponding fundef
   //  for one scope deeper to continue with its symbol table.
-  INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLTABLE(arg_node);
+  INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLENTRY(arg_node);
 
   // Traverse into the funbody
   TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
@@ -108,10 +108,15 @@ node *TCassign(node *arg_node, info *arg_info)
   {
     if(STReq(name, SYMBOLENTRY_NAME(temp)))
     {
-      if(VARLET_TYPE(let) != SYMBOLENTRY_TYPE(temp))
+      // Check if symbol entry is NOT (one of the allowed types and it matches another one)
+      if(!(SYMBOLENTRY_TYPE(temp) == T_bool && NODE_TYPE(ASSIGN_EXPR(let)) == N_bool) &&
+        !(SYMBOLENTRY_TYPE(temp) == T_float && NODE_TYPE(ASSIGN_EXPR(let)) == N_float) &&
+        !(SYMBOLENTRY_TYPE(temp) == T_int   && NODE_TYPE(ASSIGN_EXPR(let)) == N_num))
       {
-        // TODO: ERROR HANDLING, TYPE NOT FOUND
+        // The symbol entry does not match the type of the expression being assigned
+        // TODO: ERROR HANDLING, TYPE WRONG OR NOT MATCHING
       }
+
       DBUG_RETURN(arg_node);
     }
     temp = SYMBOLENTRY_NEXT(temp);
@@ -177,10 +182,9 @@ node *TCfor(node *arg_node, info *arg_info)
   DBUG_ENTER("TCfor");
 
   // Check node type of condition
-  // TODO: WELKE VARIABLES? LOOPVAR/NEXT/START/STOP?
-  // SLIDES ZEGGEN BOUND/STEP EXPRESSION
-  if(NODE_TYPE(FOR_LOOPVAR(arg_node)) != T_int
-    && NODE_TYPE(FOR_STEP(arg_node)) != T_int) {
+  if(NODE_TYPE(FOR_START(arg_node)) != N_num
+    && NODE_TYPE(FOR_STEP(arg_node)) != N_num
+    && NODE_TYPE(FOR_STOP(arg_node)) != N_num) {
     // TODO: ERROR HANDLING, WRONG TYPE
   }
 
@@ -190,12 +194,56 @@ node *TCfor(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node * TCnum(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCnum");
+
+
+
+  DBUG_RETURN(arg_node);
+}
+
+node * TCfloat(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCfloat");
+
+
+
+  DBUG_RETURN(arg_node);
+}
+
+node * TCbool(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCnum");
+
+
+
+  DBUG_RETURN(arg_node);
+}
+
+node * TCmonop(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCnum");
+
+  NODE_TYPE(MONOP_OPERAND(arg_node));
+
+  DBUG_RETURN(NODE_TYPE(MONOP_OPERAND(arg_node)));
+}
+
+node * TCnum(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCnum");
+
+
+
+  DBUG_RETURN(arg_node);
+}
 
 node *TCfunbody(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfunbody");
 
-  // DBUG_PRINT("Check", (arg_node));
+  //TODO: TRAVERSE DOWN INTO STMTS
 
   DBUG_RETURN(arg_node);
 }
