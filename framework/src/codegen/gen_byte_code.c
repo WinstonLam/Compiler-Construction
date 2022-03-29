@@ -14,6 +14,11 @@ node *GBCdoGenByteCode( node *syntaxtree)
 {
   DBUG_ENTER("GBCdoGenByteCode");
 
+  // START WITH TREE
+  // NAIVELY!!!!!!!!!!
+  // INTERMEDIATE REPRESENTATION TO TARGET LANGUAGE
+  //
+
   /*
    * Your work here....
    */
