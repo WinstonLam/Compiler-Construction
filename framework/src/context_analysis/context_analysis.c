@@ -133,12 +133,14 @@ static info *FreeInfo( info *info)
 //     }
 // }
 
-// function that given an node puts it in the symboltable adjusted for name if needed
-static void InsertEntry (info *arg_info, node *entry) {
+// function that given an node puts it in the symboltable and returns 
+static info *InsertEntry (info *arg_info, node *entry) {
   DBUG_ENTER("InsertEntry");
   // if symboltable is empty then change table pointer to current node
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    INFO_SYMBOLTABLE(arg_info) = entry;
+      INFO_SYMBOLTABLE(arg_info) = entry;
+      DBUG_PRINT( "\nAdded variable %s to symbol table\n\n", SYMBOLENTRY_NAME(entry));
+      DBUG_RETURN(arg_info);
   }
 
   // traverse through the symbol table till the end,
@@ -152,12 +154,32 @@ static void InsertEntry (info *arg_info, node *entry) {
         }
     temp = SYMBOLENTRY_NEXT(temp);
     }
+  // insert entry at end of symboltable
   SYMBOLENTRY_NEXT(temp) = entry;
+  DBUG_PRINT( "\nAdded variable %s to symbol table\n\n", SYMBOLENTRY_NAME(entry));
+  DBUG_RETURN(arg_info);
 }
 
 /*
  * Traversal Functions
  */
+
+// node *CAprogram (node *arg_node, info *arg_info) 
+// {
+//   DBUG_ENTER("CAprogram");
+
+// }
+node *CAglobdecl (node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAglobdecl");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(GLOBDECL_TYPE(arg_node), STRcpy(GLOBDECL_NAME(arg_node)), NULL);
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new);
+
+  DBUG_RETURN( arg_node);
+}
 
 
 node *CAfundef (node *arg_node, info *arg_info)
@@ -165,7 +187,7 @@ node *CAfundef (node *arg_node, info *arg_info)
   DBUG_ENTER("CAfundef");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),FUNDEF_NAME(arg_node), NULL);
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
@@ -186,24 +208,36 @@ node *CAfundef (node *arg_node, info *arg_info)
   DBUG_RETURN( arg_node);
 }
 
+node *CAfunbody(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAfunbody");
+
+  TRAVopt(FUNBODY_VARDECLS(arg_node), arg_info);
+  TRAVopt(FUNBODY_STMTS(arg_node), arg_info);
+
+  DBUG_RETURN(arg_node);
+}
+
+
 node *CAvardecl(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvardecl");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), VARDECL_NAME(arg_node), NULL);
+  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
 
   DBUG_RETURN( arg_node);
 }
 
+
 node *CAfor(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfor");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(T_int ,FOR_LOOPVAR(arg_node), NULL);
+  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
@@ -240,7 +274,7 @@ node *CAdoContextAnalysis( node *syntaxtree)
    PROGRAM_SYMBOLENTRY(syntaxtree) = INFO_SYMBOLTABLE(arg_info);
 
   if (syntaxtree != NULL) {
-    CTInote("syntaxtree is not NULL");
+    CTInote("entries are: %s", SYMBOLENTRY_NAME(PROGRAM_SYMBOLENTRY(syntaxtree)));
   }
   TRAVpop();          // Pop current traversal
 

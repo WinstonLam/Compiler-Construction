@@ -135,12 +135,12 @@ PRTsymbolentry(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTsymbolentry");
 
-  SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
+ 
 
   TypePrinter(SYMBOLENTRY_TYPE(arg_node));
 
   printf("%s ", SYMBOLENTRY_NAME(arg_node));
-
+  SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
 }

@@ -31,7 +31,9 @@
        <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
             <node name="FunDef" />
+            <node name="FunBody" />
             <node name="VarDecl"/>
+            <node name="GlobDecl" />
             <node name="For"/>
         </travuser>
       </traversal>
