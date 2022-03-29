@@ -30,8 +30,8 @@
 
        <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
-            <node name="Fundef" />
-            <node name="Vardecl"/>
+            <node name="FunDef" />
+            <node name="VarDecl"/>
             <node name="For"/>
         </travuser>
       </traversal>
@@ -39,8 +39,8 @@
       <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
         <travuser>
             <node name="Program" />
-            <node name="Fundef" />
-            <node name="Vardecl"/>
+            <node name="FunDef" />
+            <node name="VarDecl"/>
             <node name="For"/>
         </travuser>
       </traversal>
@@ -299,7 +299,7 @@
     </node>
     <node name="FunDefs">
         <sons>
-            <son name="Fundef">
+            <son name="FunDef">
                 <targets>
                     <target mandatory="yes">
                         <node name="FunDef"/>
