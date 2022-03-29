@@ -148,11 +148,35 @@ PRTsymbolentry(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTsymbolentry");
 
-  SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
+ 
 
   TypePrinter(SYMBOLENTRY_TYPE(arg_node));
 
   printf("%s ", SYMBOLENTRY_NAME(arg_node));
+  SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
+
+  DBUG_RETURN(arg_node);
+}
+
+/** <!--******************************************************************-->
+ *
+ * @fn PRTtablelink
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node tablelink node to process
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+
+node *
+PRTtablelink(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("PRTtablelink");
+
+  TABLELINK_SYMBOLENTRY(arg_node) = TRAVdo(TABLELINK_SYMBOLENTRY(arg_node), arg_info);
 
 
   DBUG_RETURN(arg_node);
@@ -357,6 +381,7 @@ node *
 PRTfundefs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTfundefs");
+ 
 
   FUNDEFS_FUNDEF(arg_node) = TRAVdo(FUNDEFS_FUNDEF(arg_node), arg_info);
 
@@ -400,6 +425,8 @@ PRTfundef(node *arg_node, info *arg_info)
   printf("}");
   printf("\n");
   printf("\n");
+
+  FUNDEF_SYMBOLENTRY(arg_node) = TRAVopt(FUNDEF_SYMBOLENTRY(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
 }

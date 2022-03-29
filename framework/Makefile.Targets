@@ -53,8 +53,7 @@
 #
 
 
-src = global scanparse print codegen framework context_analysis type_checker
-
+src = global scanparse print codegen framework context_analysis boolean_adjustments type_checker
 
 
 ###############################################################################
@@ -79,6 +78,8 @@ print       = print.o
 
 codegen     = gen_byte_code.o
 
-context_analysis = context_analysis.o
+context_analysis = context_analysis.o symboltable_linker.o
 
 type_checker = type_checker.o
+
+boolean_adjustments = bool_evaluation.o

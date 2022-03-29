@@ -16,6 +16,8 @@
         "typeinfo": "c",
         "civic.h": "c",
         "context_analysis.h": "c",
-        "mytypes.h": "c"
+        "mytypes.h": "c",
+        "symboltable_linker.h": "c",
+        "types_nodetype.h": "c"
     }
 }

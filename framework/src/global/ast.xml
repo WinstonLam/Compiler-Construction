@@ -27,11 +27,28 @@
       <traversal id="COPY" name="Copy Syntax Tree" default="user" include="copy_node.h" />
       <traversal id="FREE" name="Free Syntax Tree" default="user" include="free_node.h" />
       <traversal id="CHK" name="Check Syntax Tree" default="user" include="check.h" />
-
-       <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
+      <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
-            <node name="Fundef" />
-            <node name="Vardecl"/>
+            <node name="FunDef" />
+            <node name="VarDecl"/>
+            <node name="GlobDecl" />
+            <node name="For"/>
+        </travuser>
+      </traversal>
+
+      <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
+        <travuser>
+            <node name="Program" />
+            <node name="FunDef" />
+            <node name="VarDecl"/>
+            <node name="For"/>
+        </travuser>
+      </traversal>
+
+      <traversal id="BE" name="Bool Evaluation" default="sons" include="bool_evaluation.h">
+        <travuser>
+            <node name="BinOp" />
+            <node name="Bool" />
         </travuser>
       </traversal>
       <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h"/>
@@ -75,6 +92,16 @@
 <syntaxtree>
     <node name="Program">
         <sons>
+            <son name="SymbolEntry">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Decls">
                 <targets>
                     <target mandatory="yes">
@@ -279,7 +306,7 @@
     </node>
     <node name="FunDefs">
         <sons>
-            <son name="Fundef">
+            <son name="FunDef">
                 <targets>
                     <target mandatory="yes">
                         <node name="FunDef"/>
@@ -304,6 +331,16 @@
     </node>
     <node name="FunDef">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="SymbolEntry">
                 <targets>
                     <target mandatory="no">
@@ -404,6 +441,24 @@
                 </type>
             </attribute>
         </attributes>
+    </node>
+    <node name="TableLink">
+        <sons>
+            <son name="SymbolEntry">
+                <targets>
+                    <target mandatory ="yes">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+        </sons>
+    <attributes>
+    </attributes>
+    <flags>
+    </flags>
     </node>
     <node name="FunBody">
         <sons>
@@ -539,6 +594,16 @@
     </node>
     <node name="For">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Start">
                 <targets>
                     <target mandatory="yes">
@@ -744,6 +809,16 @@
     </node>
     <node name="VarDecl">
         <sons>
+            <son name="TableLink">
+                <targets>
+                    <target mandatory="no">
+                        <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
             <son name="Dims">
                 <targets>
                     <target mandatory="no">
