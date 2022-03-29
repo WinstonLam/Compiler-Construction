@@ -133,30 +133,38 @@ static info *FreeInfo( info *info)
 //     }
 // }
 
-// function that given an node puts it in the symboltable and returns 
+// function that given an node puts it in the symboltable
 static info *InsertEntry (info *arg_info, node *entry) {
   DBUG_ENTER("InsertEntry");
+
   // if symboltable is empty then change table pointer to current node
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
       INFO_SYMBOLTABLE(arg_info) = entry;
-      DBUG_PRINT( "\nAdded variable %s to symbol table\n\n", SYMBOLENTRY_NAME(entry));
       DBUG_RETURN(arg_info);
   }
 
   // traverse through the symbol table till the end,
   // if variable is already in the table assert error.
   node *temp = INFO_SYMBOLTABLE(arg_info);
-  while (SYMBOLENTRY_NEXT(temp) != NULL) {
-    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+  while (SYMBOLENTRY_NEXT(temp)) {
+    if (SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry))
         {
         DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        DBUG_RETURN(arg_info);
         break; // hoe moet ik error returnen
         }
-    temp = SYMBOLENTRY_NEXT(temp);
+    if (SYMBOLENTRY_NEXT(temp) != NULL) {
+        temp = SYMBOLENTRY_NEXT(temp);
+        }
     }
-  // insert entry at end of symboltable
+
+  // insert entry at end of symboltable but check on last entry aswell
+  if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+      {
+        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        DBUG_RETURN(arg_info);
+      }
   SYMBOLENTRY_NEXT(temp) = entry;
-  DBUG_PRINT( "\nAdded variable %s to symbol table\n\n", SYMBOLENTRY_NAME(entry));
   DBUG_RETURN(arg_info);
 }
 
@@ -208,16 +216,6 @@ node *CAfundef (node *arg_node, info *arg_info)
   DBUG_RETURN( arg_node);
 }
 
-node *CAfunbody(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("CAfunbody");
-
-  TRAVopt(FUNBODY_VARDECLS(arg_node), arg_info);
-  TRAVopt(FUNBODY_STMTS(arg_node), arg_info);
-
-  DBUG_RETURN(arg_node);
-}
-
 
 node *CAvardecl(node *arg_node, info *arg_info)
 {
@@ -228,6 +226,8 @@ node *CAvardecl(node *arg_node, info *arg_info)
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
 
+  // search for next vardecl if there.
+  TRAVopt(VARDECL_NEXT(arg_node), arg_info);
   DBUG_RETURN( arg_node);
 }
 
@@ -273,9 +273,6 @@ node *CAdoContextAnalysis( node *syntaxtree)
   // // add symbol table to the program scope
    PROGRAM_SYMBOLENTRY(syntaxtree) = INFO_SYMBOLTABLE(arg_info);
 
-  if (syntaxtree != NULL) {
-    CTInote("entries are: %s", SYMBOLENTRY_NAME(PROGRAM_SYMBOLENTRY(syntaxtree)));
-  }
   TRAVpop();          // Pop current traversal
 
   arg_info = FreeInfo( arg_info);

@@ -46,6 +46,12 @@ SUBPHASE( sl,
           ALWAYS,
           pet)
 
+SUBPHASE( be,
+          "Bool Evaluation",
+          BEdoBoolEvaluation,
+          ALWAYS,
+          pet)
+
 ENDPHASE( pet)
 
 /******************************************************************************/
