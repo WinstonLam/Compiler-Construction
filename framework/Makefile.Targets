@@ -81,4 +81,4 @@ codegen     = gen_byte_code.o
 
 context_analysis = context_analysis.o symboltable_linker.o
 
-boolean_adjustments = bool_evaluation.o
+boolean_adjustments = bool_evaluation.o bool_cast.o

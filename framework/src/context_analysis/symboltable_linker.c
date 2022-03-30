@@ -70,15 +70,13 @@ static node *GetNode(node *entry, info *arg_info)
     // traverse through the symbol table untill node is found
     DBUG_ENTER("GetNode");
     node *temp = INFO_SYMBOLTABLE(arg_info);
-    while (SYMBOLENTRY_NEXT(temp) != NULL) {
-        if (SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry) &&
-        SYMBOLENTRY_TYPE(temp) == SYMBOLENTRY_TYPE(entry))
-        {
-            DBUG_RETURN(temp);
+    while (temp) {
+        if (STReq(SYMBOLENTRY_NAME(temp),SYMBOLENTRY_NAME(entry))) {
+            return temp;
         }
         temp = SYMBOLENTRY_NEXT(temp);
     }
-    DBUG_RETURN(temp);
+    return temp;
 }
 
 

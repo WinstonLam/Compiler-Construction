@@ -798,7 +798,7 @@ PRTstmts(node *arg_node, info *arg_info)
  *
  * @brief Prints the node and its sons/attributes
  *
- * @param arg_node BinOp node to process
+ * @param arg_node assign node to process
  * @param arg_info pointer to info structure
  *
  * @return processed node
@@ -825,6 +825,32 @@ PRTassign(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+/** <!--******************************************************************-->
+ *
+ * @fn PRTcondexpr
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node condexpr node to process
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+
+node *
+PRTcondexpr(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("PRTcondexpr");
+
+  CONDEXPR_PRED(arg_node) = TRAVdo(CONDEXPR_PRED(arg_node), arg_info);
+  printf("?");
+  CONDEXPR_THEN(arg_node) = TRAVdo(CONDEXPR_THEN(arg_node), arg_info);
+  printf(":");
+  CONDEXPR_ELSE(arg_node) = TRAVdo(CONDEXPR_ELSE(arg_node), arg_info);
+
+  DBUG_RETURN(arg_node);
+}
 
 /** <!--******************************************************************-->
  *

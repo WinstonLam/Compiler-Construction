@@ -49,7 +49,12 @@
       <traversal id="BE" name="Bool Evaluation" default="sons" include="bool_evaluation.h">
         <travuser>
             <node name="BinOp" />
-            <node name="Bool" />
+        </travuser>
+      </traversal>
+
+      <traversal id="BC" name="Bool Cast" default="sons" include="bool_cast.h">
+        <travuser>
+            <node name="Cast" />
         </travuser>
       </traversal>
 
@@ -59,6 +64,7 @@
 <nodesets>
     <nodeset name="Expr">
         <target>
+            <node name="CondExpr" />
             <node name="BinOp"/>
             <node name="MonOp"/>
             <node name="FunCall"/>
@@ -332,16 +338,6 @@
     </node>
     <node name="FunDef">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="SymbolEntry">
                 <targets>
                     <target mandatory="no">
@@ -391,6 +387,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
@@ -595,16 +603,6 @@
     </node>
     <node name="For">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="Start">
                 <targets>
                     <target mandatory="yes">
@@ -652,6 +650,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
@@ -810,16 +820,6 @@
     </node>
     <node name="VarDecl">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="Dims">
                 <targets>
                     <target mandatory="no">
@@ -869,6 +869,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
@@ -927,6 +939,41 @@
             </son>
         </sons>
         <attributes/>
+    </node>
+    <node name="CondExpr">
+        <sons>
+            <son name="Pred">
+                <targets>
+                    <target mandatory="yes">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+            <son name="Then">
+                <targets>
+                    <target mandatory="yes">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+            <son name="Else">
+                <targets>
+                    <target mandatory="no">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+        </sons>
+    <attributes/>
     </node>
     <node name="BinOp">
         <sons>

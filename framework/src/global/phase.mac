@@ -52,6 +52,12 @@ SUBPHASE( be,
           ALWAYS,
           pet)
 
+SUBPHASE( bc,
+          "Bool Cast",
+          BEdoBoolCast,
+          ALWAYS,
+          pet)
+
 ENDPHASE( pet)
 
 /******************************************************************************/
