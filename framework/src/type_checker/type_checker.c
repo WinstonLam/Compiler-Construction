@@ -19,8 +19,6 @@
 #include "traverse.h"
 #include "dbug.h"
 #include "str.h"
-#include "type_checker.h"
-
 #include "memory.h"
 
 /*
@@ -29,12 +27,16 @@
 
 struct INFO {
   node *symboltable;
+  type *currenttype;
+  node *errornodes;
 };
 
 /*
  * INFO macros
  */
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
+#define INFO_CURRENTTYPE(n)  ((n)->currenttype)
+#define INFO_ERRORNODES(n)  ((n)->errornodes)
 
 /*
  * INFO functions
@@ -47,7 +49,10 @@ static info *MakeInfo(void)
 
   tables = (info *)MEMmalloc(sizeof(info));
 
+
   INFO_SYMBOLTABLE( tables) = NULL;
+  INFO_CURRENTTYPE( tables) = NULL;
+  INFO_ERRORNODES( tables) = NULL;
 
   DBUG_RETURN( tables);
 }
@@ -61,6 +66,23 @@ static info *FreeInfo( info *info)
   DBUG_RETURN( info);
 }
 
+static node *FindSymbolEntry( node *symboltable, info *arg_info, char *name)
+{
+  // Find variable in symboltable
+  node *temp = INFO_SYMBOLTABLE(arg_info);
+
+  while(SYMBOLENTRY_NEXT(temp) != NULL)
+  {
+    if(STReq(name, SYMBOLENTRY_NAME(temp)))
+    {
+      return temp;
+    }
+
+    temp = SYMBOLENTRY_NEXT(temp);
+  }
+
+  return NULL;
+}
 
 node *TCprogram(node *arg_node, info *arg_info)
 {
@@ -101,25 +123,15 @@ node *TCassign(node *arg_node, info *arg_info)
   // Store name of let
   node *let = ASSIGN_LET(arg_node);
   char *name = VARLET_NAME(let);
-  // Find variable in symboltable
-  node *temp = INFO_SYMBOLTABLE(arg_info);
 
-  while(SYMBOLENTRY_NEXT(temp) != NULL)
+  TRAVopt(ASSIGN_EXPR(arg_node), arg_info);
+  type currenttype = INFO_CURRENTTYPE(arg_info);
+
+  // if found
+  if(SYMBOLENTRY_TYPE(temp) != currenttype)
   {
-    if(STReq(name, SYMBOLENTRY_NAME(temp)))
-    {
-      // Check if symbol entry is NOT (one of the allowed types and it matches another one)
-      if(!(SYMBOLENTRY_TYPE(temp) == T_bool && NODE_TYPE(ASSIGN_EXPR(let)) == N_bool) &&
-        !(SYMBOLENTRY_TYPE(temp) == T_float && NODE_TYPE(ASSIGN_EXPR(let)) == N_float) &&
-        !(SYMBOLENTRY_TYPE(temp) == T_int   && NODE_TYPE(ASSIGN_EXPR(let)) == N_num))
-      {
-        // The symbol entry does not match the type of the expression being assigned
-        // TODO: ERROR HANDLING, TYPE WRONG OR NOT MATCHING
-      }
-
-      DBUG_RETURN(arg_node);
-    }
-    temp = SYMBOLENTRY_NEXT(temp);
+    // TODO: ERROR HANDLING, TYPE WRONG OR NOT MATCHING
+    INFO_ERRORNODES(arg_info) += NODE_ERROR(arg_node);
   }
 
   // TODO: ERROR COULDNT FIND NODE IN SYMBOLTABLE
@@ -132,7 +144,10 @@ node *TCifelse(node *arg_node, info *arg_info)
 
   // Check node type of condition
   // TODO: IS THIS CORRECT
-  if(NODE_TYPE(IFELSE_COND(arg_node)) != N_bool) {
+  TRAVdo(IFELSE_COND(arg_node), arg_info);
+  type currenttype = INFO_CURRENTTYPE(arg_info);
+
+  if(currenttype != T_bool) {
     // TODO: ERROR HANDLING, WRONG TYPE
   }
 
@@ -150,6 +165,8 @@ node *TCifelse(node *arg_node, info *arg_info)
 node *TCdowhile(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCdowhile");
+
+  TRAVdo(DOWHILE_COND(arg_node), arg_info);
 
   // Check node type of condition
   if(NODE_TYPE(DOWHILE_COND(arg_node)) != N_bool) {
@@ -181,10 +198,18 @@ node *TCfor(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfor");
 
-  // Check node type of condition
-  if(NODE_TYPE(FOR_START(arg_node)) != N_num
-    && NODE_TYPE(FOR_STEP(arg_node)) != N_num
-    && NODE_TYPE(FOR_STOP(arg_node)) != N_num) {
+  TRAVdo(FOR_START(arg_node), arg_info);
+  type starttype = INFO_CURRENTTYPE(arg_info);
+
+  TRAVopt(FOR_STEP(arg_node), arg_info);
+  type steptype = INFO_CURRENTTYPE(arg_info);
+
+  TRAVdo(FOR_STOP(arg_node), arg_info);
+  type stoptype = INFO_CURRENTTYPE(arg_info);
+
+  if(FOR_START(arg_node) != T_int
+    && FOR_STEP(arg_node) != T_int
+    && FOR_STOP(arg_node) != T_int) {
     // TODO: ERROR HANDLING, WRONG TYPE
   }
 
@@ -194,29 +219,29 @@ node *TCfor(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
-node * TCnum(node *arg_node, info *arg_info)
+node *TCnum(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCnum");
 
-
+  INFO_CURRENTTYPE(arg_info) = T_int;
 
   DBUG_RETURN(arg_node);
 }
 
-node * TCfloat(node *arg_node, info *arg_info)
+node *TCfloat(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfloat");
 
-
+  INFO_CURRENTTYPE(arg_info) = T_float;
 
   DBUG_RETURN(arg_node);
 }
 
-node * TCbool(node *arg_node, info *arg_info)
+node *TCbool(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCnum");
 
-
+  INFO_CURRENTTYPE(arg_info) = T_bool;
 
   DBUG_RETURN(arg_node);
 }
@@ -225,16 +250,60 @@ node * TCmonop(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCnum");
 
-  NODE_TYPE(MONOP_OPERAND(arg_node));
+  // Traverse monop for current type
+  TRAVdo(MONOP_OPERAND(arg_node), arg_info);
 
-  DBUG_RETURN(NODE_TYPE(MONOP_OPERAND(arg_node)));
+  DBUG_RETURN(arg_node);
 }
 
-node * TCnum(node *arg_node, info *arg_info)
+node *TCbinop(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("TCnum");
+  DBUG_ENTER("TCbinop");
 
+  TRAVdo(BINOP_LEFT(arg_node), arg_info);
+  type lefttype = INFO_CURRENTTYPE(arg_info);
 
+  TRAVdo(BINOP_RIGHT(arg_node), arg_info);
+  type righttype = INFO_CURRENTTYPE(arg_info);
+
+  if(righttype != lefttype)
+  {
+    // TODO: ERROR HANDLING, TYPE WRONG OR NOT MATCHING
+  } else
+  {
+    // TODO: MAYBE ALSO BREAK FROM TRAVERSAL?
+    INFO_CURRENTTYPE(arg_info) = righttype;
+  }
+
+  DBUG_RETURN(arg_node);
+}
+
+node *TCfuncall(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCfuncall");
+
+  TRAVdo(FUNCALL_ARGS(arg_node), arg_info);
+  // TODO: HOE WERKT DEZE?
+
+  // TODO: CHANGE CURRENT TYPE TO FUNCALL TYPE - GET FROM SYMBOL TABLE
+  INFO_CURRENTTYPE(arg_info) = 1;
+
+  DBUG_RETURN(arg_node);
+}
+
+node * TCexprs(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCexprs");
+
+  // Traverse through expression
+  EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+
+  // TODO: CHECK IF CURRENT TYPE IS SAME AS PARAMETER TYPE
+
+  // TRAVERSE THROUGH OTHERS
+  if (EXPRS_NEXT(arg_node) != NULL) {
+    EXPRS_NEXT(arg_node) = TRAVopt(EXPRS_NEXT(arg_node), arg_info);
+  }
 
   DBUG_RETURN(arg_node);
 }
@@ -254,17 +323,17 @@ node *TCfunbody(node *arg_node, info *arg_info)
 
 node *TCdoTypeChecking( node *syntaxtree)
 {
-  info *arg_info;
-
   DBUG_ENTER("CAdoContextAnalysis");
+
+  info *arg_info;
 
   arg_info = MakeInfo();
 
-  TRAVpush( TR_tc);   // Push traversal "ca" as defined in ast.xml
+  TRAVpush( TR_tc);   // Push traversal "tc" as defined in ast.xml
 
   syntaxtree = TRAVdo( syntaxtree, arg_info);   // Initiate ast traversal
 
-  TRAVpop();          // Pop current traversa
+  TRAVpop();          // Pop current traversal
 
   arg_info = FreeInfo( arg_info);
 
