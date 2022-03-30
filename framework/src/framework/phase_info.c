@@ -67,9 +67,9 @@
  * and cycle phases.
  */
 
-#define SUBPHASEfun(fun)      extern node *fun( node *syntax_tree); 
-#define CYCLEPHASEfun(fun)    extern node *fun( node *syntax_tree); 
-#define CYCLEPHASEFUNfun(fun) extern node *fun( node *syntax_tree); 
+#define SUBPHASEfun(fun)      extern node *fun( node *syntax_tree);
+#define CYCLEPHASEfun(fun)    extern node *fun( node *syntax_tree);
+#define CYCLEPHASEFUNfun(fun) extern node *fun( node *syntax_tree);
 
 #include "phase.mac"
 

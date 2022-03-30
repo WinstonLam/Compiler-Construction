@@ -30,6 +30,7 @@
 
 struct INFO {
   node *symboltable;
+  int forcounter;
 };
 
 /*
@@ -37,6 +38,7 @@ struct INFO {
  */
 
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
+#define INFO_FORCOUNTER(n)  ((n)->forcounter)
 
 /*
  * INFO functions
@@ -51,6 +53,7 @@ static info *MakeInfo(void)
   tables = (info *)MEMmalloc(sizeof(info));
 
   INFO_SYMBOLTABLE( tables) = NULL;
+  INFO_FORCOUNTER( tables) = 0;
 
   DBUG_RETURN( tables);
 }
@@ -68,70 +71,34 @@ static info *FreeInfo( info *info)
  * Helper Functions
  */
 
-// // Typeprinter that given an enum type returns a *char
-// static char *TypePrinter(type types)
-// {
-//   char *typename;
-//   switch (types)
-//   {
-//     case T_void:
-//       strcpy(typename, "_void");
-//       break;
-//     case T_bool:
-//       strcpy(typename, "_bool");
-//       break;
-//     case T_int:
-//       strcpy(typename, "_int");
-//       break;
-//     case T_float:
-//       strcpy(typename, "_float");
-//       break;
-//     case T_unknown:
-//       DBUG_ASSERT(0, "unknown type detected!");
-//       break;
-//   }
-//   return typename;
-// }
+// function to rename variables with different types but same name
+static char *RenameCheck(info *arg_info, node *entry) {
+  DBUG_ENTER("RenameCheck");
+  // if symboltable is empty then no rename is needed
+  if (INFO_SYMBOLTABLE(arg_info) == NULL) {
+    return SYMBOLENTRY_NAME(entry);
+  }
+  // traverse through the symbol table till the end,
+  // if variable is already in the table rename the variable.
+  node *temp = INFO_SYMBOLTABLE(arg_info);
+  // create var count string pointer that will be concatenated with multiple
+  // occurances in nested variables.
+  char *underscore = "_";  // variables wil be renamed as such: i - > _ 1 i -> _1i
+  char *var_count = STRcat(STRcpy(underscore),STRitoa(INFO_FORCOUNTER(arg_info)));
 
-
-// // function to rename variables with different types but same name
-// static void RenameCheck(info *arg_info, node *entry) {
-//   DBUG_ENTER("RenameCheck");
-//   // if symboltable is empty then no rename is needed
-//   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-//     return;
-//   }
-//   // traverse through the symbol table till the end,
-//   // if variable is already in the table assert error. if
-//   // variables have same name but different types then rename.
-//   node *temp = INFO_SYMBOLTABLE(arg_info);
-//   while (SYMBOLENTRY_NEXT(temp) != NULL) {
-//     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)) &&
-//         SYMBOLENTRY_TYPE(temp) == SYMBOLENTRY_TYPE(entry))
-//         {
-//         CTInote("test");
-//         DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
-//         }
-//     // if variables have the same name, but different types then preform a rename
-//     // where the name will be extended with the type as such: int i -> i_int
-//     else if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
-//         {
-//         // store the current names in temp values and free the current names of both variables later
-//         char *currname_temp = STRcpy(SYMBOLENTRY_NAME(temp));
-//         char *currname_entry = STRcpy(SYMBOLENTRY_NAME(entry));
-
-//         // store the type adjusted names for both variables
-//         // use the typeprinter to get a *char based on the type then STRcat
-//         // both *char to a new one
-//         SYMBOLENTRY_NAME(temp) = STRcat(currname_temp, TypePrinter(SYMBOLENTRY_TYPE(temp)));
-//         SYMBOLENTRY_NAME(entry) = STRcat(currname_entry, TypePrinter(SYMBOLENTRY_TYPE(entry)));
-
-//         MEMfree(currname_temp);
-//         MEMfree(currname_entry);
-//         }
-//       temp = SYMBOLENTRY_NEXT(temp);
-//     }
-// }
+  while (temp) {
+    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
+        {
+        // rename the name of the entry node adjusted with the var_count
+        SYMBOLENTRY_NAME(entry) = STRcat(var_count, STRcpy(SYMBOLENTRY_NAME(entry)));
+        // if variable has been renamed increment the counter
+        INFO_FORCOUNTER(arg_info) += 1;
+        break;
+        }
+      temp = SYMBOLENTRY_NEXT(temp);
+    }
+  return SYMBOLENTRY_NAME(entry);
+}
 
 // function that given an node puts it in the symboltable
 static info *InsertEntry (info *arg_info, node *entry) {
@@ -142,29 +109,21 @@ static info *InsertEntry (info *arg_info, node *entry) {
       INFO_SYMBOLTABLE(arg_info) = entry;
       DBUG_RETURN(arg_info);
   }
-
   // traverse through the symbol table till the end,
   // if variable is already in the table assert error.
+  node *curr = NULL;
   node *temp = INFO_SYMBOLTABLE(arg_info);
-  while (SYMBOLENTRY_NEXT(temp)) {
-    if (SYMBOLENTRY_NAME(temp) == SYMBOLENTRY_NAME(entry))
+  while (temp) {
+    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
         {
-        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
-        DBUG_RETURN(arg_info);
-        break; // hoe moet ik error returnen
+        CTIerror( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
         }
-    if (SYMBOLENTRY_NEXT(temp) != NULL) {
+        curr = temp;
         temp = SYMBOLENTRY_NEXT(temp);
-        }
     }
 
-  // insert entry at end of symboltable but check on last entry aswell
-  if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
-      {
-        DBUG_PRINT( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
-        DBUG_RETURN(arg_info);
-      }
-  SYMBOLENTRY_NEXT(temp) = entry;
+  // insert entry at end of symboltable
+  SYMBOLENTRY_NEXT(curr) = entry;
   DBUG_RETURN(arg_info);
 }
 
@@ -172,11 +131,6 @@ static info *InsertEntry (info *arg_info, node *entry) {
  * Traversal Functions
  */
 
-// node *CAprogram (node *arg_node, info *arg_info)
-// {
-//   DBUG_ENTER("CAprogram");
-
-// }
 node *CAglobdecl (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAglobdecl");
@@ -220,8 +174,7 @@ node *CAfundef (node *arg_node, info *arg_info)
 node *CAvardecl(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvardecl");
-
-  // create new node to add to symboltable
+   // create new node to add to symboltable
   node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
@@ -239,6 +192,8 @@ node *CAfor(node *arg_node, info *arg_info)
   // create new node to add to symboltable
   node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
 
+  // if instance variable is reused in the nested for loop then rename
+  RenameCheck(arg_info, new);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
 
@@ -251,6 +206,9 @@ node *CAfor(node *arg_node, info *arg_info)
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = uppertable;
+  // reset forloop variabel counter to 0
+  INFO_FORCOUNTER(arg_info) = 0;
+
   DBUG_RETURN( arg_node);
 
 }
