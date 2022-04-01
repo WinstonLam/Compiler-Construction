@@ -64,7 +64,15 @@ SUBPHASE( bc,
           ALWAYS,
           pet)
 
+
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
+          NEVER,
+          pet)
+
 ENDPHASE( pet)
+
 
 /******************************************************************************/
 
