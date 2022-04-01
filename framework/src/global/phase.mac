@@ -46,6 +46,12 @@ SUBPHASE( sl,
           ALWAYS,
           pet)
 
+SUBPHASE( gt,
+          "Globvar Transformation",
+          GTdoGlobvarTransformation,
+          ALWAYS,
+          pet)
+
 SUBPHASE( be,
           "Bool Evaluation",
           BEdoBoolEvaluation,

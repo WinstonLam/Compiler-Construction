@@ -131,12 +131,12 @@ static info *InsertEntry (info *arg_info, node *entry) {
  * Traversal Functions
  */
 
-node *CAglobdecl (node *arg_node, info *arg_info)
+node *CAglobdef (node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("CAglobdecl");
+  DBUG_ENTER("CAglobdef");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(GLOBDECL_TYPE(arg_node), STRcpy(GLOBDECL_NAME(arg_node)), NULL);
+  node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new);
 

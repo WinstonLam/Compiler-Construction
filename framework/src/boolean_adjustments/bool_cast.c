@@ -36,22 +36,22 @@ node *BCcast (node *arg_node, info *arg_info)
 
     if (CAST_TYPE(arg_node) == T_bool) {
       if (NODE_TYPE(CAST_EXPR(arg_node)) == N_num ) {
-          arg_node = TBmakeCondexpr(TBmakeBinop(BO_lt, CAST_EXPR(arg_node), TBmakeNum(1)), TBmakeBool(FALSE), TBmakeBool(TRUE));
+          arg_node = TBmakeCondexpr(TBmakeBinop(BO_ne, CAST_EXPR(arg_node), TBmakeNum(0)), TBmakeBool(TRUE), TBmakeBool(FALSE));
       }
       if (NODE_TYPE(CAST_EXPR(arg_node)) == N_float ) {
-          arg_node = TBmakeCondexpr(TBmakeBinop(BO_lt, CAST_EXPR(arg_node), TBmakeNum(1.0)), TBmakeBool(FALSE), TBmakeBool(TRUE));
+          arg_node = TBmakeCondexpr(TBmakeBinop(BO_ne, CAST_EXPR(arg_node), TBmakeNum(0)), TBmakeBool(TRUE), TBmakeBool(FALSE));
       }
     }
 
   if (CAST_TYPE(arg_node) == T_int) {
     if (NODE_TYPE(CAST_EXPR(arg_node)) == N_bool) {
-      arg_node = TBmakeCondexpr(TBmakeBinop(BO_eq,CAST_EXPR(arg_node), TBmakeBool(TRUE)) , TBmakeNum(1), TBmakeNum(0));
+      arg_node = TBmakeCondexpr(TBmakeBinop(BO_ne,CAST_EXPR(arg_node), TBmakeBool(TRUE)) , TBmakeNum(1), TBmakeNum(0));
     }
   }
 
   if (CAST_TYPE(arg_node) == T_float) {
     if (NODE_TYPE(CAST_EXPR(arg_node)) == N_bool) {
-      arg_node = TBmakeCondexpr(TBmakeBinop(BO_eq,CAST_EXPR(arg_node), TBmakeBool(TRUE)) , TBmakeFloat(1.0), TBmakeFloat(0.0));
+      arg_node = TBmakeCondexpr(TBmakeBinop(BO_ne,CAST_EXPR(arg_node), TBmakeBool(TRUE)) , TBmakeFloat(1.0), TBmakeFloat(0.0));
     }
   }
 

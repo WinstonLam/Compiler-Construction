@@ -32,7 +32,7 @@
         <travuser>
             <node name="FunDef" />
             <node name="VarDecl"/>
-            <node name="GlobDecl" />
+            <node name="GlobDef" />
             <node name="For"/>
         </travuser>
       </traversal>
@@ -43,6 +43,13 @@
             <node name="FunDef" />
             <node name="VarDecl"/>
             <node name="For"/>
+        </travuser>
+      </traversal>
+    
+    <traversal id="GT" name="Globvar Transformation" default="sons" include="globvar_transformation.h">
+        <travuser>
+            <node name="Decls" />
+            <node name="GlobDef"/>
         </travuser>
       </traversal>
 

@@ -19,6 +19,7 @@
         "mytypes.h": "c",
         "symboltable_linker.h": "c",
         "types_nodetype.h": "c",
-        "bool_evaluation.h": "c"
+        "bool_evaluation.h": "c",
+        "bool_cast.h": "c"
     }
 }
