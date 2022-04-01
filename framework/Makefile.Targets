@@ -53,7 +53,7 @@
 #
 
 
-src = global scanparse print codegen framework context_analysis boolean_adjustments type_checker
+src = global scanparse print codegen framework context_analysis boolean_adjustments type_checker globvar_transformation
 
 
 ###############################################################################

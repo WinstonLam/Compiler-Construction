@@ -103,7 +103,7 @@ node *SLfundef (node *arg_node, info *arg_info)
 
     // create the link for the fundef node by getting it's symboltable
     // entry using the GetNode function.
-    FUNDEF_TABLELINK(arg_node) = GetNode(STRcpy(FUNDEF_NAME(arg_node)), arg_info);
+    FUNDEF_TABLELINK(arg_node) = GetNode(FUNDEF_NAME(arg_node), arg_info);
     CTInote("Linked variable %s to global scope",SYMBOLENTRY_NAME(FUNDEF_TABLELINK(arg_node)));
 
     // store the global scope symboltable in place to first traverse into the funbody.

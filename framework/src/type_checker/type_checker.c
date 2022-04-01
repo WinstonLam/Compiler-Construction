@@ -147,20 +147,20 @@ node *TCifelse(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
-node *TCdowhile(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("TCdowhile");
+// node *TCdowhile(node *arg_node, info *arg_info)
+// {
+//   DBUG_ENTER("TCdowhile");
 
-  // Check node type of condition
-  if(NODE_TYPE(DOWHILE_COND(arg_node)) != N_bool) {
-    // TODO: ERROR HANDLING, WRONG TYPE
-  }
+//   // Check node type of condition
+//   if(NODE_TYPE(DOWHILE_COND(arg_node)) != N_bool) {
+//     // TODO: ERROR HANDLING, WRONG TYPE
+//   }
 
-  // Traverse down block
-  DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
+//   // Traverse down block
+//   DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
 
-  DBUG_RETURN(arg_node);
-}
+//   DBUG_RETURN(arg_node);
+// }
 
 node *TCwhile(node *arg_node, info *arg_info)
 {
@@ -221,23 +221,23 @@ node * TCbool(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
-node * TCmonop(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("TCnum");
+// node * TCmonop(node *arg_node, info *arg_info)
+// {
+//   DBUG_ENTER("TCnum");
 
-  NODE_TYPE(MONOP_OPERAND(arg_node));
+//   NODE_TYPE(MONOP_OPERAND(arg_node));
 
-  DBUG_RETURN(NODE_TYPE(MONOP_OPERAND(arg_node)));
-}
+//   DBUG_RETURN(NODE_TYPE(MONOP_OPERAND(arg_node)));
+// }
 
-node * TCnum(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("TCnum");
+// node * TCnum(node *arg_node, info *arg_info)
+// {
+//   DBUG_ENTER("TCnum");
 
 
 
-  DBUG_RETURN(arg_node);
-}
+//   DBUG_RETURN(arg_node);
+// }
 
 node *TCfunbody(node *arg_node, info *arg_info)
 {

@@ -81,16 +81,21 @@ static char *RenameCheck(info *arg_info, node *entry) {
   // traverse through the symbol table till the end,
   // if variable is already in the table rename the variable.
   node *temp = INFO_SYMBOLTABLE(arg_info);
-  // create var count string pointer that will be concatenated with multiple
-  // occurances in nested variables.
-  char *underscore = "_";  // variables wil be renamed as such: i - > _ 1 i -> _1i
-  char *var_count = STRcat(STRcpy(underscore),STRitoa(INFO_FORCOUNTER(arg_info)));
 
   while (temp) {
     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
         {
         // rename the name of the entry node adjusted with the var_count
-        SYMBOLENTRY_NAME(entry) = STRcat(var_count, STRcpy(SYMBOLENTRY_NAME(entry)));
+        char *old= SYMBOLENTRY_NAME(entry); 
+        char *n = STRitoa(INFO_FORCOUNTER(arg_info));
+        // create var count string pointer that will be concatenated with multiple
+        // occurances in nested variables.
+        // variables wil be renamed as such: i - > _ 1 i -> _1i
+        char *new = STRcat("_",n);
+        SYMBOLENTRY_NAME(entry) = STRcat(new, SYMBOLENTRY_NAME(entry));
+        MEMfree(old);
+        MEMfree(new);
+        MEMfree(n);
         // if variable has been renamed increment the counter
         INFO_FORCOUNTER(arg_info) += 1;
         break;
@@ -174,6 +179,10 @@ node *CAfundef (node *arg_node, info *arg_info)
 node *CAvardecl(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvardecl");
+
+  if VARDECL_INIT(arg_node) {
+    TRAVopt(VARDECL_INIT(arg_node),arg_info);
+  }
    // create new node to add to symboltable
   node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
@@ -187,7 +196,7 @@ node *CAvardecl(node *arg_node, info *arg_info)
 
 node *CAfor(node *arg_node, info *arg_info)
 {
-  // DBUG_ENTER("CAfor");
+  DBUG_ENTER("CAfor");
 
   // create new node to add to symboltable
   node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
