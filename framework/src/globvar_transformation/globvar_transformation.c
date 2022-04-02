@@ -31,28 +31,31 @@
  */
 
 struct INFO {
-  node *init;
+  node *start;
+  node *end;
 };
 
 /*
  * INFO macros
  */
-#define INFO_INIT(n)  ((n)->init)
+#define INFO_START(n)  ((n)->start)
+#define INFO_END(n)  ((n)->end)
 /*
  * INFO functions
  */
 
 static info *MakeInfo(void)
 {
-  info *init_func;
+  info *result;
 
   DBUG_ENTER( "MakeInfo");
 
-  init_func = (info *)MEMmalloc(sizeof(info));
+  result = (info *)MEMmalloc(sizeof(info));
 
-  INFO_INIT( init_func) = NULL;
+  INFO_START(result) = NULL;
+  INFO_END(result) = NULL;
 
-  DBUG_RETURN( init_func);
+  DBUG_RETURN(result);
 }
 
 static info *FreeInfo( info *info)
@@ -65,29 +68,36 @@ static info *FreeInfo( info *info)
 }
 
 
-static void AddNode(node *entry, info *arg_info){
-  node *body = FUNBODY_STMTS(FUNDEF_FUNBODY(INFO_INIT(arg_info)));
-  while (body) {
-        if (STMTS_NEXT(body)) {
-          STMTS_NEXT(body) = entry;
-          return;
-        }
-        body = STMTS_NEXT(body);
-    }
-  FUNBODY_STMTS(FUNDEF_FUNBODY(INFO_INIT(arg_info))) = entry;
+void AddNode(node *entry, info *arg_info)
+{
+  if (INFO_START(arg_info) != NULL)
+  {
+    STMTS_NEXT(INFO_END(arg_info)) = entry;
+    INFO_END(arg_info) = entry;
+  } 
+  else 
+  {
+    INFO_START(arg_info) = entry;
+    INFO_END(arg_info) = INFO_START(arg_info);
+  }
 }
 /*
  * Traversal functions
  */
 
-node *GTdecls (node *arg_node, info *arg_info)
+node *GTprogram (node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("GTdecls");
+  DBUG_ENTER("GTprogram");
 
-  // Initialize an empty init function
-  INFO_INIT(arg_info) = TBmakeFundef(T_void, STRcpy("__init"), NULL, TBmakeFunbody(NULL, NULL, NULL), NULL);
+  // Initialize an empty init function.
 
-  TRAVdo(DECLS_DECL(arg_node),arg_info);
+  PROGRAM_DECLS(arg_node) = TRAVopt(PROGRAM_DECLS(arg_node), arg_info);
+
+  if (INFO_START(arg_info) != NULL) {
+    node *init = TBmakeFundef(T_void, STRcpy("__init"), NULL, TBmakeFunbody(NULL, NULL, INFO_START(arg_info)), NULL);
+    PROGRAM_DECLS(arg_node) =  TBmakeDecls(init, PROGRAM_DECLS(arg_node));
+  }
+
 
   DBUG_RETURN( arg_node);
 }
@@ -95,14 +105,15 @@ node *GTdecls (node *arg_node, info *arg_info)
 node *GTglobdef (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("GTglobdef");
+  DBUG_PRINT("Test", GLOBDEF_NAME(arg_node));
    // voeg een node toe aan de struct info als die initialized is
-  if (GLOBDEF_INIT(arg_node) != NULL) {
-
-    AddNode(TBmakeStmts(TBmakeVarlet(GLOBDEF_NAME(arg_node), GLOBDEF_INIT(arg_node), NULL), NULL), arg_info);
+  if (GLOBDEF_INIT(arg_node)) {
+ 
+    AddNode(TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(GLOBDEF_NAME(arg_node)), NULL, NULL), GLOBDEF_INIT(arg_node)), NULL), arg_info);
     GLOBDEF_INIT(arg_node) = NULL;
   }
   DBUG_RETURN( arg_node);
-
+  
 }
 
 /*
@@ -118,7 +129,7 @@ node *GTdoGlobvarTransformation( node *syntaxtree)
   arg_info = MakeInfo();
 
   TRAVpush( TR_gt);
-  syntaxtree = TRAVdo( syntaxtree, NULL);
+  syntaxtree = TRAVdo( syntaxtree, arg_info);
   TRAVpop();
 
   arg_info = FreeInfo( arg_info);

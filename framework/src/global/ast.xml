@@ -27,9 +27,11 @@
       <traversal id="COPY" name="Copy Syntax Tree" default="user" include="copy_node.h" />
       <traversal id="FREE" name="Free Syntax Tree" default="user" include="free_node.h" />
       <traversal id="CHK" name="Check Syntax Tree" default="user" include="check.h" />
+
       <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
             <node name="FunDef" />
+            <node name="Param" />
             <node name="VarDecl"/>
             <node name="GlobDef" />
             <node name="For"/>
@@ -39,6 +41,7 @@
       <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
         <travuser>
             <node name="Program" />
+            <node name="Param" />
             <node name="FunDef" />
             <node name="VarDecl"/>
             <node name="For"/>
@@ -47,7 +50,7 @@
     
     <traversal id="GT" name="Globvar Transformation" default="sons" include="globvar_transformation.h">
         <travuser>
-            <node name="Decls" />
+            <node name="Program" />
             <node name="GlobDef"/>
         </travuser>
       </traversal>
@@ -815,6 +818,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>

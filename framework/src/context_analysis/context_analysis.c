@@ -106,7 +106,7 @@ static char *RenameCheck(info *arg_info, node *entry) {
 }
 
 // function that given an node puts it in the symboltable
-static info *InsertEntry (info *arg_info, node *entry) {
+static info *InsertEntry (info *arg_info, node *entry, node *arg_node) {
   DBUG_ENTER("InsertEntry");
 
   // if symboltable is empty then change table pointer to current node
@@ -121,7 +121,7 @@ static info *InsertEntry (info *arg_info, node *entry) {
   while (temp) {
     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
         {
-        CTIerror( "Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
+        CTIerrorLine(NODE_LINE(arg_node),"Multiple variable declaration of %s", SYMBOLENTRY_NAME(entry));
         }
         curr = temp;
         temp = SYMBOLENTRY_NEXT(temp);
@@ -143,7 +143,7 @@ node *CAglobdef (node *arg_node, info *arg_info)
   // create new node to add to symboltable
   node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
+  InsertEntry(arg_info, new, arg_node);
 
   DBUG_RETURN( arg_node);
 }
@@ -157,7 +157,7 @@ node *CAfundef (node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
+  InsertEntry(arg_info, new, arg_node);
 
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
@@ -166,6 +166,9 @@ node *CAfundef (node *arg_node, info *arg_info)
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
+  // traverse into the parameters and link these to fundef scope
+  TRAVopt(FUNDEF_PARAMS(arg_node),arg_info);
+  
   // link these lower level scope symboltables to their corresponding node
   node *localtable = INFO_SYMBOLTABLE( arg_info);
   FUNDEF_SYMBOLENTRY(arg_node) = localtable;
@@ -186,7 +189,7 @@ node *CAvardecl(node *arg_node, info *arg_info)
    // create new node to add to symboltable
   node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
+  InsertEntry(arg_info, new, arg_node);
 
   // search for next vardecl if there.
   TRAVopt(VARDECL_NEXT(arg_node), arg_info);
@@ -204,17 +207,11 @@ node *CAfor(node *arg_node, info *arg_info)
   // if instance variable is reused in the nested for loop then rename
   RenameCheck(arg_info, new);
   // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new);
-
-  // store the innermost function scope symboltable in place to first traverse into the forbody.
-  node *uppertable = INFO_SYMBOLTABLE( arg_info);
-  // set the symbol table to for loop initializing value for the forloop block
+  InsertEntry(arg_info, new, arg_node);
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FOR_BLOCK(arg_node),arg_info);
 
-  // reset global scope symboltable
-  INFO_SYMBOLTABLE(arg_info) = uppertable;
   // reset forloop variabel counter to 0
   INFO_FORCOUNTER(arg_info) = 0;
 
@@ -222,6 +219,21 @@ node *CAfor(node *arg_node, info *arg_info)
 
 }
 
+node *CAparam(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAparam");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL);
+
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new, arg_node);
+
+  // search for next param if there.  
+  TRAVopt(PARAM_NEXT(arg_node), arg_info);
+  DBUG_RETURN( arg_node);
+
+}
 /*
  * Traversal start function
  */

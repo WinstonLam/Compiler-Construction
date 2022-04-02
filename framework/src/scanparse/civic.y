@@ -113,6 +113,10 @@ fundef: EXPORT type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($2, STRcpy($3), NULL, $8, $5);
       }
+      | EXPORT type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, $7, NULL);
+      }
       | type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($1, STRcpy($2), NULL, $7, $4);
@@ -120,6 +124,14 @@ fundef: EXPORT type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       | type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($1, STRcpy($2), NULL, $6, NULL);
+      }
+      | EXTERN type ID BRACKET_L param BRACKET_R SEMICOLON
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, $5);
+      }
+      | EXTERN type ID BRACKET_L BRACKET_R SEMICOLON
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, NULL);
       }
       ;
 
@@ -161,9 +173,21 @@ param: type ID
       }
       ;
 
-globdef: EXPORT type ID LET expr
+globdef: EXPORT type ID LET expr SEMICOLON
       {
-        $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
+        $$ = TBmakeGlobdef($2, STRcpy($3), NULL, $5);
+      }
+      | type ID SEMICOLON
+      {
+        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, NULL);
+      }
+      | EXPORT type ID SEMICOLON
+      {
+        $$ = TBmakeGlobdef($2, STRcpy($3), NULL, NULL);
+      }
+      | type ID LET expr SEMICOLON
+      {
+        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, $4);
       }
       ;
 
