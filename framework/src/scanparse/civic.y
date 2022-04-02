@@ -275,13 +275,13 @@ expr: constant
       }
       | ID
       {
-        $$ = TBmakeVar(STRcpy($1), NULL, NULL); //TBmakeVar wat moeten hier de decl en indices zijn?
+        $$ = TBmakeVar(STRcpy($1), NULL, NULL);
       }
       ;
 
 funcall: ID BRACKET_L BRACKET_R SEMICOLON
       {
-        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL); // Wat moet decl hier zijn?
+        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL);
       }
       | ID BRACKET_L exprs BRACKET_R SEMICOLON
       {

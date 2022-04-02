@@ -72,11 +72,11 @@ static info *FreeInfo( info *info)
  */
 
 // function to rename variables with different types but same name
-static char *RenameCheck(info *arg_info, node *entry) {
+static bool RenameCheck(info *arg_info, node *entry) {
   DBUG_ENTER("RenameCheck");
   // if symboltable is empty then no rename is needed
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    return SYMBOLENTRY_NAME(entry);
+    return FALSE;
   }
   // traverse through the symbol table till the end,
   // if variable is already in the table rename the variable.
@@ -98,11 +98,11 @@ static char *RenameCheck(info *arg_info, node *entry) {
         MEMfree(n);
         // if variable has been renamed increment the counter
         INFO_FORCOUNTER(arg_info) += 1;
-        break;
+        return TRUE;
         }
       temp = SYMBOLENTRY_NEXT(temp);
     }
-  return SYMBOLENTRY_NAME(entry);
+  return FALSE;
 }
 
 // function that given an node puts it in the symboltable
@@ -205,9 +205,10 @@ node *CAfor(node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
 
   // if instance variable is reused in the nested for loop then rename
-  RenameCheck(arg_info, new);
-  // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new, arg_node);
+  if (!RenameCheck(arg_info, new)) {
+    // use the InsertEntry function to insert the new node into the symboltable
+    InsertEntry(arg_info, new, arg_node);
+  }
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FOR_BLOCK(arg_node),arg_info);

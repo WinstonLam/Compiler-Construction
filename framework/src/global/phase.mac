@@ -46,6 +46,12 @@ SUBPHASE( sl,
           ALWAYS,
           pet)
 
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
+          NEVER,
+          pet)
+
 SUBPHASE( gt,
           "Globvar Transformation",
           GTdoGlobvarTransformation,
@@ -64,12 +70,12 @@ SUBPHASE( bc,
           ALWAYS,
           pet)
 
-
-SUBPHASE( tc,
-          "Type checker",
-          TCdoTypeChecking,
-          NEVER,
+SUBPHASE( fo,
+          "For Optimisation",
+          FOdoForOptimisation,
+          ALWAYS,
           pet)
+
 
 ENDPHASE( pet)
 
