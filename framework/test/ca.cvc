@@ -1,6 +1,10 @@
 int ForTest() {
+    int i = 3;
+    i = 33;
     for(int n = 0, 5) {
-        int x = 3;
-        int x = 2;
+        for(int n = 1, 3) {
+
+        }
+
     }
 }

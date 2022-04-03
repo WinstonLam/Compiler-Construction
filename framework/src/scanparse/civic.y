@@ -139,6 +139,10 @@ vardecl: type ID LET expr SEMICOLON vardecl
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $6);
       }
+      | type ID LET SEMICOLON vardecl
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $5);
+      }
       | type ID LET expr SEMICOLON
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL);

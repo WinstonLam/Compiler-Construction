@@ -70,11 +70,9 @@
 
       <traversal id ="FO" name="For Optimisation" default="sons" include="for_optimisation.h">
         <travuser>
-            <node name="FunBody" />
-            <node name="Stmts" />
+            <node name="FunDef" />
             <node name="For" />
-            <node name="VarLet" />
-            <node name="Var" />
+            <node name="Program" />
         </travuser>
         </traversal>
     </general>

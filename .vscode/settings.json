@@ -20,6 +20,7 @@
         "symboltable_linker.h": "c",
         "types_nodetype.h": "c",
         "bool_evaluation.h": "c",
-        "bool_cast.h": "c"
+        "bool_cast.h": "c",
+        "copy.h": "c"
     }
 }

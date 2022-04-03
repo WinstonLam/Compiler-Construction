@@ -13,10 +13,11 @@
 
 
 #include "context_analysis.h"
-
+#include "copy.h"
 #include "types.h"
 #include "tree_basic.h"
 #include "traverse.h"
+#include "free.h"
 #include "dbug.h"
 #include "ctinfo.h"
 #include "str.h"
@@ -30,6 +31,7 @@
 
 struct INFO {
   node *symboltable;
+  node *scope;
   int forcounter;
 };
 
@@ -39,6 +41,7 @@ struct INFO {
 
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_FORCOUNTER(n)  ((n)->forcounter)
+#define INFO_SCOPE(n)  ((n)->scope)
 
 /*
  * INFO functions
@@ -53,6 +56,7 @@ static info *MakeInfo(void)
   tables = (info *)MEMmalloc(sizeof(info));
 
   INFO_SYMBOLTABLE( tables) = NULL;
+  INFO_SCOPE( tables) = NULL;
   INFO_FORCOUNTER( tables) = 0;
 
   DBUG_RETURN( tables);
@@ -72,11 +76,11 @@ static info *FreeInfo( info *info)
  */
 
 // function to rename variables with different types but same name
-static bool RenameCheck(info *arg_info, node *entry) {
+node *RenameCheck(info *arg_info, node *entry) {
   DBUG_ENTER("RenameCheck");
   // if symboltable is empty then no rename is needed
   if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    return FALSE;
+    DBUG_RETURN(entry);
   }
   // traverse through the symbol table till the end,
   // if variable is already in the table rename the variable.
@@ -86,27 +90,21 @@ static bool RenameCheck(info *arg_info, node *entry) {
     if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
         {
         // rename the name of the entry node adjusted with the var_count
-        char *old= SYMBOLENTRY_NAME(entry); 
-        char *n = STRitoa(INFO_FORCOUNTER(arg_info));
         // create var count string pointer that will be concatenated with multiple
         // occurances in nested variables.
         // variables wil be renamed as such: i - > _ 1 i -> _1i
-        char *new = STRcat("_",n);
-        SYMBOLENTRY_NAME(entry) = STRcat(new, SYMBOLENTRY_NAME(entry));
-        MEMfree(old);
-        MEMfree(new);
-        MEMfree(n);
+        SYMBOLENTRY_NAME(entry) = STRcatn(3, SYMBOLENTRY_NAME(entry), "_", STRitoa(INFO_FORCOUNTER(arg_info)));
         // if variable has been renamed increment the counter
         INFO_FORCOUNTER(arg_info) += 1;
-        return TRUE;
+        DBUG_RETURN(entry);
         }
       temp = SYMBOLENTRY_NEXT(temp);
     }
-  return FALSE;
+  DBUG_RETURN(entry);
 }
 
 // function that given an node puts it in the symboltable
-static info *InsertEntry (info *arg_info, node *entry, node *arg_node) {
+info *InsertEntry (info *arg_info, node *entry, node *arg_node) {
   DBUG_ENTER("InsertEntry");
 
   // if symboltable is empty then change table pointer to current node
@@ -163,6 +161,7 @@ node *CAfundef (node *arg_node, info *arg_info)
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
   // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
   INFO_SYMBOLTABLE(arg_info) = NULL;
+  INFO_SCOPE(arg_info) = FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)); 
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
@@ -172,6 +171,9 @@ node *CAfundef (node *arg_node, info *arg_info)
   // link these lower level scope symboltables to their corresponding node
   node *localtable = INFO_SYMBOLTABLE( arg_info);
   FUNDEF_SYMBOLENTRY(arg_node) = localtable;
+
+  // add new made vardecl to the body of the current scope
+  FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = globaltable;
@@ -205,10 +207,22 @@ node *CAfor(node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
 
   // if instance variable is reused in the nested for loop then rename
-  if (!RenameCheck(arg_info, new)) {
-    // use the InsertEntry function to insert the new node into the symboltable
-    InsertEntry(arg_info, new, arg_node);
+  node *renamed = RenameCheck(arg_info, COPYdoCopy(new));
+
+  // create new vardecl in the current scope
+  if (INFO_SCOPE(arg_info)) {
+    INFO_SCOPE(arg_info) =  TBmakeVardecl(STRcpy(SYMBOLENTRY_NAME(renamed)), T_int, NULL, FOR_START(arg_node), INFO_SCOPE(arg_info));
+  } else {
+    INFO_SCOPE(arg_info) = TBmakeVardecl(STRcpy(SYMBOLENTRY_NAME(renamed)), T_int, NULL, FOR_START(arg_node), NULL);
   }
+
+  // change the for loop var to declared vardecl
+  FOR_LOOPVAR(arg_node) = STRcpy(SYMBOLENTRY_NAME(renamed));
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, COPYdoCopy(renamed), arg_node);
+
+  FREEdoFreeTree(new);
+  FREEdoFreeTree(renamed);
 
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FOR_BLOCK(arg_node),arg_info);
@@ -230,7 +244,7 @@ node *CAparam(node *arg_node, info *arg_info)
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
-  // search for next param if there.  
+  // search for next param if there.
   TRAVopt(PARAM_NEXT(arg_node), arg_info);
   DBUG_RETURN( arg_node);
 

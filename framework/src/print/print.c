@@ -588,8 +588,7 @@ PRTfor(node *arg_node, info *arg_info)
 
   IndentPrinter(arg_info);
   printf("for ");
-  printf("(int ");
-  FOR_START(arg_node) = TRAVdo(FOR_START(arg_node),arg_info);
+  printf("(%s",FOR_LOOPVAR(arg_node));
   printf(", ");
   FOR_STOP(arg_node) = TRAVdo(FOR_STOP(arg_node),arg_info);
 
