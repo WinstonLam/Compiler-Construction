@@ -47,13 +47,6 @@
             <node name="For"/>
         </travuser>
       </traversal>
-    
-    <traversal id="GT" name="Globvar Transformation" default="sons" include="globvar_transformation.h">
-        <travuser>
-            <node name="Program" />
-            <node name="GlobDef"/>
-        </travuser>
-      </traversal>
 
       <traversal id="BE" name="Bool Evaluation" default="sons" include="bool_evaluation.h">
         <travuser>
@@ -75,6 +68,13 @@
             <node name="Program" />
         </travuser>
         </traversal>
+
+        <traversal id="GT" name="Globvar Transformation" default="sons" include="globvar_transformation.h">
+        <travuser>
+            <node name="Program" />
+            <node name="GlobDef"/>
+        </travuser>
+      </traversal>
     </general>
 
 </phases>

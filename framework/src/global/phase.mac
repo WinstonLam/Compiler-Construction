@@ -52,12 +52,6 @@ SUBPHASE( tc,
           NEVER,
           pet)
 
-SUBPHASE( gt,
-          "Globvar Transformation",
-          GTdoGlobvarTransformation,
-          ALWAYS,
-          pet)
-
 SUBPHASE( be,
           "Bool Evaluation",
           BEdoBoolEvaluation,
@@ -73,6 +67,12 @@ SUBPHASE( bc,
 SUBPHASE( fo,
           "For Optimisation",
           FOdoForOptimisation,
+          ALWAYS,
+          pet)
+
+SUBPHASE( gt,
+          "Globvar Transformation",
+          GTdoGlobvarTransformation,
           ALWAYS,
           pet)
 

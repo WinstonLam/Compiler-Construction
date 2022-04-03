@@ -99,14 +99,39 @@ node *FOfor (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("FOfor");
 
-  // make a new while with the values of the for loop
-  node *new = TBmakeWhile(TBmakeBinop(BO_lt, TBmakeVar(STRcpy(FOR_LOOPVAR(arg_node)), NULL, NULL ), COPYdoCopy(FOR_STOP(arg_node))), COPYdoCopy(FOR_BLOCK(arg_node)));
+  char *name =  FOR_LOOPVAR(arg_node);
 
-  // after while has been made the for loop is no longer needed
-  FREEdoFreeTree(arg_node);
+  node *block = FOR_BLOCK(arg_node);
+  if (block) {
+
+    while(STMTS_NEXT(block)) { 
+      block = STMTS_NEXT(block);
+    }
+     
+    STMTS_NEXT(block) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+  } else {
+    CTInote("in");
+    node *increment = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    if (increment) {
+      CTInote("test");
+    }
+    
+    STMTS_STMT(block) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    CTInote("out");
+  }
+  CTInote("test");
+
+  // make a new while with the values of the for loop
+  node *new = TBmakeWhile(TBmakeBinop(BO_lt, TBmakeVarlet(STRcpy(name), NULL, NULL ), COPYdoCopy(FOR_STOP(arg_node))), COPYdoCopy(block));
+
+
 
   //  traverse into the new while loop body
   WHILE_BLOCK(new) = TRAVopt(WHILE_BLOCK(new),arg_info);
+
+    // after while has been made the for loop is no longer needed
+  MEMfree(name);
+  FREEdoFreeTree(arg_node);
 
   DBUG_RETURN( new);
 }
