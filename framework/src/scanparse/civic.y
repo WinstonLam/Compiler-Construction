@@ -58,7 +58,7 @@ static int yyerror( char *errname);
 
 %precedence CAST
 %precedence THEN
-%precedence ELSE
+/* %precedence ELSE */
 
 %left MINUS PLUS
 %right UMINUS FACTORIAL
@@ -68,6 +68,8 @@ static int yyerror( char *errname);
 %right EQ
 %left OR AND
 
+%nonassoc ID
+%nonassoc ELSE
 
 %start program
 
