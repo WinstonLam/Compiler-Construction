@@ -160,7 +160,7 @@ node *TCfuncall(node *arg_node, info *arg_info)
 }
 
 
-node * TCexprs(node *arg_node, info *arg_info)
+node *TCexprs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCexprs");
 
@@ -215,11 +215,11 @@ node *TCdowhile(node *arg_node, info *arg_info)
       CTIerror( "Type %s does not match required type %s", TypePrinter(currenttype), TypePrinter(T_bool));
   }
 
-  // Traverse down block
-  DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
+   // Traverse down block
+   DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
 
-  DBUG_RETURN(arg_node);
-}
+   DBUG_RETURN(arg_node);
+ }
 
 
 node *TCwhile(node *arg_node, info *arg_info)
@@ -351,7 +351,7 @@ node *TCfloat(node *arg_node, info *arg_info)
 
   INFO_CURRENTTYPE(arg_info) = T_float;
 
-  DBUG_RETURN(arg_node);
+   DBUG_RETURN(arg_node);
 }
 
 
