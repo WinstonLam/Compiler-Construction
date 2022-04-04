@@ -187,7 +187,7 @@ node *CAvardecl(node *arg_node, info *arg_info)
 
 node *CAfor(node *arg_node, info *arg_info)
 {
-  // DBUG_ENTER("CAfor");
+  DBUG_ENTER("CAfor");
 
   // create new node to add to symboltable
   node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);

@@ -62,7 +62,7 @@ SUBPHASE( bc,
 SUBPHASE( tc,
           "Type checker",
           TCdoTypeChecking,
-          NEVER,
+          ALWAYS,
           pet)
 
 ENDPHASE( pet)

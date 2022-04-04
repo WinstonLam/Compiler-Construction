@@ -56,7 +56,25 @@
             <node name="Cast" />
         </travuser>
       </traversal>
-      <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h"/>
+      <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
+          <travuser>
+            <node name="Program" />
+            <node name="FunDef" />
+            <node name="FunBody"/>
+            <node name="FunCall"/>
+            <node name="Exprs" />
+            <node name="IfElse" />
+            <node name="DoWhile"/>
+            <node name="While"/>
+            <node name="For" />
+            <node name="BinOp" />
+            <node name="MonOp"/>
+            <node name="Assign"/>
+            <node name="Num"/>
+            <node name="Float"/>
+            <node name="Bool"/>
+        </travuser>
+      </traversal>
     </general>
 
 </phases>
