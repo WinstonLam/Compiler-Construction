@@ -70,9 +70,16 @@ SUBPHASE( fo,
           ALWAYS,
           pet)
 
+
 SUBPHASE( gt,
           "Globvar Transformation",
           GTdoGlobvarTransformation,
+          ALWAYS,
+          pet)
+          
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
           ALWAYS,
           pet)
 
