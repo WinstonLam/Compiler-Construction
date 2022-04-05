@@ -1,5 +1,4 @@
 #include "gen_byte_code.h"
-
 #include "types.h"
 #include "tree_basic.h"
 #include "traverse.h"
@@ -454,16 +453,24 @@ node *GBCbool(node *arg_node, info *arg_info)
 }
 
 /*
- * Traversal start function
+ * INFO structure
  */
 
+struct INFO {
+  node *symboltable;
+  // TODO: Constant pool
+};
+
+/*
+ * Traversal start function
+ */
 node *GBCdoGenByteCode( node *syntaxtree)
 {
   DBUG_ENTER("GBCdoGenByteCode");
 
+  DBUG_ASSERT((syntaxtree != NULL), "GBCdoGenByteCode called with empty syntaxtree");
+  
   info *info = MakeInfo();
-
-  TRAVpush(TR_tc);
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)
@@ -473,9 +480,12 @@ node *GBCdoGenByteCode( node *syntaxtree)
   {
     INFO_FILE(info) = stdout;
   }
-
+  
+  TRAVpush(TR_tc);
+  TRAVdo(syntaxtree, arg_info);
   TRAVpop();
 
+  
   info = FreeInfo(info);
 
   DBUG_RETURN( syntaxtree);
