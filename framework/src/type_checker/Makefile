@@ -47,43 +47,80 @@
 
 
 
-################################################################################
+###############################################################################
 #
-# general setup:
+# Makefile for sac2c source directories
+#
+# This Makefile is copied on demand into source directories.
+# Be sure not to edit these copies.
+#
+###############################################################################
+
+
+
+###############################################################################
+#
+# General settings
 #
 
-CC           := gcc
-CCPROD       := gcc
-CCFLAGS      := -Wall -g3 -std=c99 -fPIC -DPIC -D_POSIX_SOURCE -D_DEFAULT_SOURCE -Dlint
+PROJECT_ROOT = ../..
 
-CCDEPS_FLAGS := -M $(CCFLAGS)
-CCPROD_FLAGS := -Wall -g -O3 -std=c99 -fPIC -DPIC -D_POSIX_SOURCE -D_DEFAULT_SOURCE -Dlint
+include $(PROJECT_ROOT)/Makefile.Config
 
-MAKE_NORM    := $(MAKE) CC="$(CC)" CCFLAGS="$(CCFLAGS)"
-MAKE_CLEAN   := $(MAKE) TARGET="clean" clean
-MAKEFLAGS    += --no-print-directory
-
-EXCLUDE_INCS := xml
-INCS         := -I../../inc \
-                $(patsubst %,-I../%,$(filter-out $(EXCLUDE_INCS),\
-                                  $(notdir $(wildcard ../*))))
-LIBS         := -ldl -lm
-OS := $(shell uname)
-ifeq ($(OS), Darwin)
-    LIBS += -ll
-    CCFLAGS += -D_C99_SOURCE
-    CCPRODFLAGS += -D_C99_SOURCE
-else
-    LIBS += -lfl
-endif
-RM           := rm -f
-GZIP         := gzip -f
-ECHO         := echo
-LEX          := flex -n
-YACC         := bison -y -dv
-XSLTENGINE   := xsltproc
-DOT          := dot
-INDENT       := indent
+TARGET = $(notdir $(PWD))
 
 
+
+###############################################################################
+#
+# Dummy rules
+#
+
+.PHONY: clean all devel prod
+
+
+
+###############################################################################
+#
+# Start rules
+#
+
+all: devel
+
+devel:
+	@$(ECHO) ""
+	@$(ECHO) "Making current subdirectory (developer version)"
+	@$(MAKE) -C $(PROJECT_ROOT) TARGET="$(TARGET)" MODE="" CHECK_DEPS="yes" makesubdir
+
+prod:
+	@$(ECHO) ""
+	@$(ECHO) "Making current subdirectory (product version)"
+	@$(MAKE) -C $(PROJECT_ROOT) TARGET="$(TARGET)" MODE="prod" CHECK_DEPS="yes"makesubdir
+
+
+
+
+###############################################################################
+#
+# Rules for generating Makefiles
+#
+
+Makefile: $(PROJECT_ROOT)/Makefile.Source
+	@$(ECHO) "  Creating makefile: $@"
+	@cp -f $< $@
+
+
+
+
+
+###############################################################################
+#
+# Rules for directory cleaning
+#
+
+clean:
+	@$(RM) *.o *.a *.bak *~ .*.d
+	@$(RM) $(patsubst %.xsl,%,$(wildcard *.xsl))
+	@$(RM) -r .sb SunWS_cache
+	@$(RM) *.lex.c *.tab.c *.tab.h y.output
 

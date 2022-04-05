@@ -58,7 +58,7 @@ static int yyerror( char *errname);
 
 %precedence CAST
 %precedence THEN
-%precedence ELSE
+/* %precedence ELSE */
 
 %left MINUS PLUS
 %right UMINUS FACTORIAL
@@ -68,6 +68,8 @@ static int yyerror( char *errname);
 %right EQ
 %left OR AND
 
+%nonassoc ID
+%nonassoc ELSE
 
 %start program
 
@@ -111,29 +113,45 @@ globdecl: EXTERN type ID SEMICOLON
 
 fundef: EXPORT type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
-        $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, $8, $5);
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, $8, $5);
+      }
+      | EXPORT type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, $7, NULL);
       }
       | type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
-        $$ = TBmakeFundef($1, STRcpy($2), NULL, NULL, $7, $4);
+        $$ = TBmakeFundef($1, STRcpy($2), NULL, $7, $4);
       }
       | type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
       {
-        $$ = TBmakeFundef($1, STRcpy($2), NULL, NULL, $6, NULL);
+        $$ = TBmakeFundef($1, STRcpy($2), NULL, $6, NULL);
+      }
+      | EXTERN type ID BRACKET_L param BRACKET_R SEMICOLON
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, $5);
+      }
+      | EXTERN type ID BRACKET_L BRACKET_R SEMICOLON
+      {
+        $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, NULL);
       }
       ;
 
 vardecl: type ID LET expr SEMICOLON vardecl
       {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $4, $6);
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $6);
+      }
+      | type ID LET SEMICOLON vardecl
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $5);
       }
       | type ID LET expr SEMICOLON
       {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $4, NULL);
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL);
       }
       | type ID SEMICOLON
       {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL, NULL);
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL);
       }
       ;
 
@@ -161,9 +179,21 @@ param: type ID
       }
       ;
 
-globdef: EXPORT type ID LET expr
+globdef: EXPORT type ID LET expr SEMICOLON
       {
-        $$ = TBmakeGlobdef($2, STRcpy($3), $5, NULL);
+        $$ = TBmakeGlobdef($2, STRcpy($3), NULL, $5);
+      }
+      | type ID SEMICOLON
+      {
+        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, NULL);
+      }
+      | EXPORT type ID SEMICOLON
+      {
+        $$ = TBmakeGlobdef($2, STRcpy($3), NULL, NULL);
+      }
+      | type ID LET expr SEMICOLON
+      {
+        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, $4);
       }
       ;
 
@@ -251,13 +281,13 @@ expr: constant
       }
       | ID
       {
-        $$ = TBmakeVar(STRcpy($1), NULL, NULL); //TBmakeVar wat moeten hier de decl en indices zijn?
+        $$ = TBmakeVar(STRcpy($1), NULL, NULL);
       }
       ;
 
 funcall: ID BRACKET_L BRACKET_R SEMICOLON
       {
-        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL); // Wat moet decl hier zijn?
+        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL);
       }
       | ID BRACKET_L exprs BRACKET_R SEMICOLON
       {
@@ -349,11 +379,11 @@ dowhile: DO block WHILE BRACKET_L expr BRACKET_R SEMICOLON
 
 for: FOR BRACKET_L TYPE_INT ID LET expr COMMA expr BRACKET_R block
       {
-        $$ =  TBmakeFor($4, NULL, $6, $8, NULL, $10);
+        $$ =  TBmakeFor($4, $6, $8, NULL, $10);
       }
       | FOR BRACKET_L TYPE_INT ID LET expr COMMA expr COMMA expr BRACKET_R block
       {
-        $$ = TBmakeFor($4, NULL, $6, $8, $10, $12);
+        $$ = TBmakeFor($4, $6, $8, $10, $12);
       }
       ;
 
