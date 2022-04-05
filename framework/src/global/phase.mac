@@ -58,12 +58,25 @@ SUBPHASE( bc,
           ALWAYS,
           pet)
 
+SUBPHASE( fo,
+          "For Optimisation",
+          FOdoForOptimisation,
+          ALWAYS,
+          pet)
+
+
+SUBPHASE( gt,
+          "Globvar Transformation",
+          GTdoGlobvarTransformation,
+          ALWAYS,
+          pet)
 
 SUBPHASE( tc,
           "Type checker",
           TCdoTypeChecking,
           ALWAYS,
           pet)
+
 
 ENDPHASE( pet)
 

@@ -181,6 +181,34 @@ PRTtablelink(node *arg_node, info *arg_info)
 
   DBUG_RETURN(arg_node);
 }
+/** <!--******************************************************************-->
+ *
+ * @fn PRTglobdef
+ *
+ * @brief Prints the node and its sons/attributes
+ *
+ * @param arg_node SOME node to process ??
+ * @param arg_info pointer to info structure
+ *
+ * @return processed node
+ *
+ ***************************************************************************/
+// ??? Wat zijn de DIMS? en Hoe weten we wanneer we export wel of niet moeten printen?
+node *
+PRTglobdef(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("PRTglobdef");
+
+  
+  TypePrinter(GLOBDEF_TYPE(arg_node));
+  printf("%s", GLOBDEF_NAME(arg_node));
+
+  GLOBDEF_DIMS(arg_node) = TRAVopt(GLOBDEF_DIMS(arg_node),arg_info);
+  GLOBDEF_INIT(arg_node) = TRAVopt(GLOBDEF_INIT(arg_node), arg_info);
+  printf(";\n");
+
+  DBUG_RETURN(arg_node);
+}
 
 /** <!--******************************************************************-->
  *
@@ -560,8 +588,7 @@ PRTfor(node *arg_node, info *arg_info)
 
   IndentPrinter(arg_info);
   printf("for ");
-  printf("(int ");
-  FOR_START(arg_node) = TRAVdo(FOR_START(arg_node),arg_info);
+  printf("(%s",FOR_LOOPVAR(arg_node));
   printf(", ");
   FOR_STOP(arg_node) = TRAVdo(FOR_STOP(arg_node),arg_info);
 
@@ -611,32 +638,7 @@ PRTglobdecl(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
-/** <!--******************************************************************-->
- *
- * @fn PRTglobdef
- *
- * @brief Prints the node and its sons/attributes
- *
- * @param arg_node SOME node to process ??
- * @param arg_info pointer to info structure
- *
- * @return processed node
- *
- ***************************************************************************/
-// ??? Wat zijn de DIMS? en Hoe weten we wanneer we export wel of niet moeten printen?
-node *
-PRTglobdef(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("PRTglobdef");
 
-  GLOBDEF_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
-  GLOBDEF_INIT(arg_node) = TRAVopt(GLOBDEF_INIT(arg_node), arg_info);
-
-  printf("%d", GLOBDEF_TYPE(arg_node));
-  printf("%s", GLOBDEF_NAME(arg_node));
-
-  DBUG_RETURN(arg_node);
-}
 
 /** <!--******************************************************************-->
  *

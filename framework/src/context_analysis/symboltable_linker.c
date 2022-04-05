@@ -65,18 +65,22 @@ static info *FreeInfo( info *info)
 
 
 // this function will return a given node in a symboltable
-static node *GetNode(node *entry, info *arg_info)
+static node *GetNode(char *entry, info *arg_info, node *arg_node)
 {
     // traverse through the symbol table untill node is found
     DBUG_ENTER("GetNode");
     node *temp = INFO_SYMBOLTABLE(arg_info);
     while (temp) {
-        if (STReq(SYMBOLENTRY_NAME(temp),SYMBOLENTRY_NAME(entry))) {
+        if (STReq(SYMBOLENTRY_NAME(temp),entry)) {
             return temp;
         }
         temp = SYMBOLENTRY_NEXT(temp);
     }
-    return temp;
+    if (!temp) {
+        CTIerrorLine(NODE_LINE(arg_node),"Use of undeclared variable %s", entry);
+    }
+    DBUG_RETURN(temp);
+    
 }
 
 
@@ -101,13 +105,9 @@ node *SLfundef (node *arg_node, info *arg_info)
 {
     DBUG_ENTER("SLfundef");
 
-    // create a lookup node to look it up in the symboltable
-    node *lookup = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL);
-
     // create the link for the fundef node by getting it's symboltable
     // entry using the GetNode function.
-    FUNDEF_TABLELINK(arg_node) = GetNode(lookup, arg_info);
-    CTInote("Linked variable %s to global scope",SYMBOLENTRY_NAME(FUNDEF_TABLELINK(arg_node)));
+    FUNDEF_TABLELINK(arg_node) = GetNode(FUNDEF_NAME(arg_node), arg_info, arg_node);
 
     // store the global scope symboltable in place to first traverse into the funbody.
     node *globaltable = INFO_SYMBOLTABLE( arg_info);
@@ -127,13 +127,12 @@ node *SLvardecl(node *arg_node, info *arg_info)
 {
     DBUG_ENTER("SLvardecl");
 
-    // create a lookup node to look it up in the symboltable
-    node *lookup = TBmakeSymbolentry(VARDECL_TYPE(arg_node),STRcpy(VARDECL_NAME(arg_node)), NULL);
-
     // create the link for the vardecl node by getting it's symboltable
     // entry using the GetNode function.
-    VARDECL_TABLELINK(arg_node) = GetNode(lookup, arg_info);
-    CTInote("Linked variable %s to fundef scope",SYMBOLENTRY_NAME(VARDECL_TABLELINK(arg_node)) );
+    VARDECL_TABLELINK(arg_node) = GetNode((VARDECL_NAME(arg_node)), arg_info, arg_node);
+
+    // search for next vardecl if there.
+    TRAVopt(VARDECL_NEXT(arg_node), arg_info);
 
     DBUG_RETURN( arg_node);
 }
@@ -142,14 +141,23 @@ node *SLfor(node *arg_node, info *arg_info)
 {
     DBUG_ENTER("SLfor");
 
-    // create a lookup node to look it up in the symboltable
-    node *lookup = TBmakeSymbolentry(T_int, STRcpy(FOR_LOOPVAR(arg_node)), NULL);
+    FOR_TABLELINK(arg_node) = GetNode((FOR_LOOPVAR(arg_node)), arg_info, arg_node);
 
-    FOR_TABLELINK(arg_node) = GetNode(lookup, arg_info);
+    TRAVopt(FOR_BLOCK(arg_node),arg_info);
 
     DBUG_RETURN( arg_node);
 }
 
+node *SLparam(node *arg_node, info *arg_info)
+{
+    DBUG_ENTER("SLparam");
+
+    PARAM_TABLELINK(arg_node) = GetNode((PARAM_NAME(arg_node)), arg_info, arg_node);
+
+    TRAVopt(PARAM_NEXT(arg_node), arg_info);
+
+    DBUG_RETURN( arg_node);
+}
 /*
  * Traversal start function
  */
