@@ -479,7 +479,7 @@ static int yyerror (char *error)
 
 node *YYparseTree( void)
 {
-  yydebug = 1;
+  yydebug = 0;
   DBUG_ENTER("YYparseTree");
 
   yyparse();

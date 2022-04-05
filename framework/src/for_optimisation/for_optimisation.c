@@ -86,7 +86,9 @@ node *FOfundef (node *arg_node, info *arg_info)
     DBUG_ENTER("FOfundef");
 
     // set the scope level to that of the fundef for one scope deeper.
-    INFO_SCOPE(arg_info) = FUNBODY_STMTS(FUNDEF_FUNBODY(arg_node));
+    if (FUNDEF_FUNBODY(arg_node)) {
+       INFO_SCOPE(arg_info) = FUNBODY_STMTS(FUNDEF_FUNBODY(arg_node));
+    }
 
     // traverse into the funbody to search for for loops
     TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);

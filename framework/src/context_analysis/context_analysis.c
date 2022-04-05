@@ -162,14 +162,16 @@ node *CAfundef (node *arg_node, info *arg_info)
 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
-
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
   // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
   INFO_SYMBOLTABLE(arg_info) = NULL;
-  INFO_SCOPE(arg_info) = FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)); 
-  INFO_FUNNAME(arg_info) = STRcpy(FUNDEF_NAME(arg_node));
+  
+  if (FUNDEF_FUNBODY(arg_node)) {
+      INFO_SCOPE(arg_info) = FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)); 
+  }
 
+  INFO_FUNNAME(arg_info) = STRcpy(FUNDEF_NAME(arg_node));
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
   // traverse into the parameters and link these to fundef scope
@@ -183,7 +185,10 @@ node *CAfundef (node *arg_node, info *arg_info)
   FUNDEF_SYMBOLENTRY(arg_node) = localtable;
 
   // add new made vardecl to the body of the current scope
-  FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
+  if (FUNDEF_FUNBODY(arg_node)) {
+      FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
+  }
+
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = globaltable;

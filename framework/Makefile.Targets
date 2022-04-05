@@ -89,3 +89,13 @@ type_checker = type_checker.o
 
 for_optimisation = for_optimisation.o
 
+TEST_DIRS := basic # nested_funs arrays preprocess
+
+TEST_CFLAGS := ""
+
+TEST_RUN_FUNCTIONAL := 1
+
+TEST_CIVAS := bin/civas
+TEST_CIVVM := bin/civvm
+
+TEST_CIVCC := bin/civicc
