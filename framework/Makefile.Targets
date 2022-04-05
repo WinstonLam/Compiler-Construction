@@ -76,13 +76,14 @@ scanparse   = civic.tab.o civic.lex.o
 
 print       = print.o
 
-codegen     = gen_byte_code.o
+codegen     = gen_byte_code.o linkedlist.o
 
 context_analysis = context_analysis.o symboltable_linker.o
 
 boolean_adjustments = bool_evaluation.o bool_cast.o
 
 globvar_transformation = globvar_transformation.o
+
 type_checker = type_checker.o
 
 for_optimisation = for_optimisation.o
