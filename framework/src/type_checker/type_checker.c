@@ -29,6 +29,8 @@
 struct INFO {
   node *symboltable;
   type currenttype;
+  type fundeftype;
+  int paramcounter;
 };
 
 /*
@@ -36,6 +38,8 @@ struct INFO {
  */
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_CURRENTTYPE(n)  ((n)->currenttype)
+#define INFO_PARAMCOUNTER(n)  ((n)->paramcounter)
+#define INFO_FUNDEFTYPE(n)  ((n)->fundeftype)
 
 /*
  * INFO functions
@@ -51,6 +55,8 @@ static info *MakeInfo(void)
 
   INFO_SYMBOLTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
+  INFO_FUNDEFTYPE(tables) = T_unknown;
+  INFO_PARAMCOUNTER(tables) = 0;
 
   DBUG_RETURN( tables);
 }
@@ -131,6 +137,8 @@ node *TCfundef(node *arg_node, info *arg_info)
   //  for one scope deeper to continue with its symbol table.
   INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLENTRY(arg_node);
 
+  INFO_CURRENTTYPE(arg_info) = FUNDEF_TYPE(arg_node);
+  INFO_FUNDEFTYPE(arg_info) = FUNDEF_TYPE(arg_node);
   // Traverse into the funbody
   FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
 
@@ -140,32 +148,68 @@ node *TCfundef(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node *TCreturn(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCreturn");
+
+  // traverse into the return expression
+  RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
+
+  // check if the return type is the same as the function type
+  if (INFO_FUNDEFTYPE(arg_info) != INFO_CURRENTTYPE(arg_info)) {
+    CTIerror("expected return type: %s, but got: %s", TypePrinter(INFO_FUNDEFTYPE(arg_info)), TypePrinter(INFO_CURRENTTYPE(arg_info)));
+  }
+
+  DBUG_RETURN(arg_node);
+}
 
 node *TCfuncall(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfuncall");
 
-  FUNCALL_ARGS(arg_node) = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
+  // get the first param
+  node *temp = TRAVopt(FUNCALL_PARAMS(arg_node), arg_info);
 
-  node *funcallNode = GetNode(FUNCALL_NAME(arg_node), arg_info);
+  // check for each param if the given type corresponds
+  while (temp) {
 
-  // for each funcall arg
-  // traverse through arg (/expr)
-  // retrieve type
+    // get symboltable entry name of the param
+    char *name = STRcatn(3,FUNCALL_NAME(arg_node), STRcpy("_p"), STRitoa(INFO_PARAMCOUNTER(arg_info)));
+    // increment param counter
+    INFO_PARAMCOUNTER(arg_info)++;
+    
+    // get symboltableentry node of the param
+    node *paramNode = GetNode(STRcpy(name), arg_info);
 
-  // SYMBOLTABLE_
-  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(FUNCALL_NAME(arg_node), arg_info));
+    // traverse down the expressions of the parameter
+    EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+    type currenttype = INFO_CURRENTTYPE(arg_info);
 
+    // check if the type of the param is the same as the type of the expression
+    if (currenttype != T_unknown) {
+      if (currenttype != SYMBOLENTRY_TYPE(paramNode)) {
+        CTIerror( "Expected parameter of type %s but got %s", TypePrinter(SYMBOLENTRY_TYPE(paramNode)), TypePrinter(currenttype));
+      }
+    }
+
+    temp = TRAVopt(EXPRS_NEXT(temp), arg_info);
+
+  }
+
+  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(STRcpy(FUNCALL_NAME(arg_node)), arg_info));
+  // reset paramcounter
+  INFO_PARAMCOUNTER(arg_info) = 0;
   DBUG_RETURN(arg_node);
 }
 
-
-node *TCexprs(node *arg_node, info *arg_info)
+node * TCexprs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCexprs");
 
   // Traverse through expression
-  EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+
+
+
   EXPRS_NEXT(arg_node) = TRAVopt(EXPRS_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);

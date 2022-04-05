@@ -7,18 +7,19 @@
 #include "str.h"
 #include "memory.h"
 #include "ctinfo.h"
+#include "globals.h"
 
 struct INFO {
   node *symboltable;
   type currenttype;
   int count;
-  char[] file;
+  FILE *file;
 };
 
 #define INFO_SYMBOLTABLE(n) ((n)->symboltable)
 #define INFO_CURRENTTYPE(n) ((n)->currenttype)
 #define INFO_COUNT(n) ((n)->count)
-#define INF_FILE(n) ((n)->file)
+#define INFO_FILE(n) ((n)->file)
 
 static info *MakeInfo(void)
 {
@@ -174,13 +175,17 @@ node *GBCifelse(node *arg_node, info *arg_info)
   // TODO: Generate else and then
 
 
-  DBUG_RETURN()
+  DBUG_RETURN(arg_node);
 }
 
 
-node *GBCfor(node *arg, info *arg_info)
+node *GBCfor(node *arg_node, info *arg_info)
 {
+  DBUG_ENTER("GBCfor");
+
   // TODO: ZOU DIT EEN WHILE MOETEN ZIJN?
+
+  DBUG_RETURN(arg_node);
 }
 
 
@@ -189,6 +194,8 @@ node *GBCwhile(node *arg_node, info *arg_info)
   DBUG_ENTER("GBCwhile");
 
   //TODO:
+
+  DBUG_RETURN(arg_node);
 }
 
 
@@ -235,8 +242,9 @@ node *GBCbinop(node *arg_node, info *arg_info)
   BINOP_RIGHT(arg_node) = TRAVdo(BINOP_RIGHT(arg_node), arg_info);
 
   const binop op = BINOP_OP(arg_node);
-  const type currenttype = INFO_CURRENTTYPE(arg_node);
+  const type currenttype = INFO_CURRENTTYPE(arg_info);
   const char *opstring;
+  const char *typestring;
 
   switch (op)
   {
@@ -297,7 +305,7 @@ node *GBCbinop(node *arg_node, info *arg_info)
       break;
   }
 
-  switch (currentType)
+  switch (currenttype)
   {
     case T_int:
       typestring = "i";
@@ -315,21 +323,22 @@ node *GBCbinop(node *arg_node, info *arg_info)
       break;
   }
 
-  fprintf(INFO_FILE(arg_info), "  %s%s\n", currenttype, opstring);
+  fprintf(INFO_FILE(arg_info), "  %s%s\n", typestring, opstring);
 
   DBUG_RETURN(arg_node);
 }
 
 
-node *GBCbinop(node *arg_node, info *arg_info)
+node *GBCmonop(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("GBCbinop");
+  DBUG_ENTER("GBCmonop");
 
   MONOP_OPERAND(arg_node) = TRAVdo(MONOP_OPERAND(arg_node), arg_info);
 
   const monop op = MONOP_OP(arg_node);
-  const type currenttype = INFO_CURRENTTYPE(arg_node);
+  const type currenttype = INFO_CURRENTTYPE(arg_info);
   const char *opstring;
+  const char *typestring;
 
   switch (op)
   {
@@ -349,7 +358,7 @@ node *GBCbinop(node *arg_node, info *arg_info)
       break;
   }
 
-  switch (currentType)
+  switch (currenttype)
   {
     case T_int:
       typestring = "i";
@@ -367,7 +376,7 @@ node *GBCbinop(node *arg_node, info *arg_info)
       break;
   }
 
-  fprintf(INFO_FILE(arg_info), "  %s%s\n", currenttype, opstring);
+  fprintf(INFO_FILE(arg_info), "  %s%s\n", typestring, opstring);
 
   DBUG_RETURN(arg_node);
 }
@@ -378,7 +387,7 @@ node *GBCcast(node *arg_node, info *arg_info)
 
   CAST_EXPR(arg_node) = TRAVdo(CAST_EXPR(arg_node), arg_info);
   const type currenttype = CAST_TYPE(arg_node);
-  char *string
+  char *opstring;
 
   switch (currenttype)
   {
@@ -454,6 +463,8 @@ node *GBCdoGenByteCode( node *syntaxtree)
 
   info *info = MakeInfo();
 
+  TRAVpush(TR_tc);
+
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)
   {
@@ -462,6 +473,10 @@ node *GBCdoGenByteCode( node *syntaxtree)
   {
     INFO_FILE(info) = stdout;
   }
+
+  TRAVpop();
+
+  info = FreeInfo(info);
 
   DBUG_RETURN( syntaxtree);
 }

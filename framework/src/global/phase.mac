@@ -46,12 +46,6 @@ SUBPHASE( sl,
           ALWAYS,
           pet)
 
-SUBPHASE( tc,
-          "Type checker",
-          TCdoTypeChecking,
-          NEVER,
-          pet)
-
 SUBPHASE( be,
           "Bool Evaluation",
           BEdoBoolEvaluation,
@@ -76,7 +70,7 @@ SUBPHASE( gt,
           GTdoGlobvarTransformation,
           ALWAYS,
           pet)
-          
+
 SUBPHASE( tc,
           "Type checker",
           TCdoTypeChecking,
