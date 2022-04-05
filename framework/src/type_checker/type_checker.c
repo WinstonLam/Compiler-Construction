@@ -13,6 +13,7 @@
 
 
 #include "type_checker.h"
+#include "symboltable_linker.h"
 
 #include "types.h"
 #include "tree_basic.h"
@@ -28,14 +29,20 @@
 
 struct INFO {
   node *symboltable;
+  node *parenttable;
   type currenttype;
+  type fundeftype;
+  int paramcounter;
 };
 
 /*
  * INFO macros
  */
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
+#define INFO_PARENTTABLE(n) ((n)->parenttable)
 #define INFO_CURRENTTYPE(n)  ((n)->currenttype)
+#define INFO_PARAMCOUNTER(n)  ((n)->paramcounter)
+#define INFO_FUNDEFTYPE(n)  ((n)->fundeftype)
 
 /*
  * INFO functions
@@ -50,7 +57,10 @@ static info *MakeInfo(void)
   tables = (info *)MEMmalloc(sizeof(info));
 
   INFO_SYMBOLTABLE(tables) = NULL;
+  INFO_PARENTTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
+  INFO_FUNDEFTYPE(tables) = T_unknown;
+  INFO_PARAMCOUNTER(tables) = 0;
 
   DBUG_RETURN( tables);
 }
@@ -67,22 +77,6 @@ static info *FreeInfo( info *info)
 /*
  * Helper functions
  */
-
-// this function will return a given node in a symboltable
-static node *GetNode(char *name, info *arg_info)
-{
-    // traverse through the symbol table untill node is found
-    node *temp = INFO_SYMBOLTABLE(arg_info);
-    while (temp) {
-        if (STReq(SYMBOLENTRY_NAME(temp), name)) {
-            return temp;
-        }
-        temp = SYMBOLENTRY_NEXT(temp);
-    }
-
-    CTIerror("Could not be found in symbol table: %s", name);
-    return temp;
-}
 
 
 static char *TypePrinter(type types)
@@ -113,6 +107,10 @@ node *TCprogram(node *arg_node, info *arg_info)
   // Set info symbol table from program symbol entry
   INFO_SYMBOLTABLE(arg_info) = PROGRAM_SYMBOLENTRY(arg_node);
 
+  if(!INFO_SYMBOLTABLE(arg_info)) {
+      CTInote("EMPTY SYMBOL TABLE");
+  }
+
   PROGRAM_DECLS(arg_node) = TRAVopt(PROGRAM_DECLS(arg_node), arg_info);
 
 
@@ -130,42 +128,87 @@ node *TCfundef(node *arg_node, info *arg_info)
   // set the symbol table to symbol table of the corresponding fundef
   //  for one scope deeper to continue with its symbol table.
   INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLENTRY(arg_node);
+  INFO_PARENTTABLE(arg_info) = globaltable;
+  
+  if(!INFO_SYMBOLTABLE(arg_info)) {
+      CTInote("EMPTY SYMBOL TABLE");
+  }
 
+
+  INFO_CURRENTTYPE(arg_info) = FUNDEF_TYPE(arg_node);
+  INFO_FUNDEFTYPE(arg_info) = FUNDEF_TYPE(arg_node);
   // Traverse into the funbody
   FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = globaltable;
+  INFO_PARENTTABLE(arg_info) = NULL;
 
   DBUG_RETURN(arg_node);
 }
 
+node *TCreturn(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCreturn");
+
+  // traverse into the return expression
+  RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
+
+  // check if the return type is the same as the function type
+  if (INFO_FUNDEFTYPE(arg_info) != INFO_CURRENTTYPE(arg_info)) {
+    CTIerror("expected return type: %s, but got: %s", TypePrinter(INFO_FUNDEFTYPE(arg_info)), TypePrinter(INFO_CURRENTTYPE(arg_info)));
+  }
+
+  DBUG_RETURN(arg_node);
+}
 
 node *TCfuncall(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfuncall");
 
-  FUNCALL_ARGS(arg_node) = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
+  // get the first param
+  node *temp = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
 
-  node *funcallNode = GetNode(FUNCALL_NAME(arg_node), arg_info);
+  // check for each param if the given type corresponds
+  while (temp) {
 
-  // for each funcall arg
-  // traverse through arg (/expr)
-  // retrieve type
+    // get symboltable entry name of the param
+    char *name = STRcatn(3,FUNCALL_NAME(arg_node), STRcpy("_p"), STRitoa(INFO_PARAMCOUNTER(arg_info)));
+    // increment param counter
+    INFO_PARAMCOUNTER(arg_info)++;
+    
+    // get symboltableentry node of the param
+    node *paramNode = GetNode(STRcpy(name), INFO_SYMBOLTABLE(arg_info) ,arg_node, INFO_PARENTTABLE(arg_info));
 
-  // SYMBOLTABLE_
-  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(FUNCALL_NAME(arg_node), arg_info));
+    // traverse down the expressions of the parameter
+    EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+    type currenttype = INFO_CURRENTTYPE(arg_info);
 
+    // check if the type of the param is the same as the type of the expression
+    if (currenttype != T_unknown) {
+      if (currenttype != SYMBOLENTRY_TYPE(paramNode)) {
+        CTIerror( "Expected parameter of type %s but got %s", TypePrinter(SYMBOLENTRY_TYPE(paramNode)), TypePrinter(currenttype));
+      }
+    }
+
+    temp = TRAVopt(EXPRS_NEXT(temp), arg_info);
+
+  }
+
+  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(STRcpy(FUNCALL_NAME(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node,INFO_PARENTTABLE(arg_info)));
+  // reset paramcounter
+  INFO_PARAMCOUNTER(arg_info) = 0;
   DBUG_RETURN(arg_node);
 }
 
-
-node *TCexprs(node *arg_node, info *arg_info)
+node * TCexprs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCexprs");
 
   // Traverse through expression
-  EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
+
+
+
   EXPRS_NEXT(arg_node) = TRAVopt(EXPRS_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
@@ -322,7 +365,7 @@ node *TCassign(node *arg_node, info *arg_info)
   type currenttype = INFO_CURRENTTYPE(arg_info);
   CTInote("Linked variable %s to global scope",TypePrinter(currenttype));
 
-  node *symbolnode = GetNode(VARLET_NAME(ASSIGN_LET(arg_node)), arg_info);
+  node *symbolnode = GetNode(VARLET_NAME(ASSIGN_LET(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
   type nodetype = SYMBOLENTRY_TYPE(symbolnode);
   CTInote("Linked variable %s to global scope",TypePrinter(nodetype));
 
@@ -371,7 +414,7 @@ node *TCbool(node *arg_node, info *arg_info)
 
 node *TCdoTypeChecking( node *syntaxtree)
 {
-  DBUG_ENTER("CAdoContextAnalysis");
+  DBUG_ENTER("TCdoTypeChecking");
 
   info *arg_info;
 

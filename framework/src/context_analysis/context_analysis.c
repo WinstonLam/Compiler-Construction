@@ -32,6 +32,8 @@
 struct INFO {
   node *symboltable;
   node *scope;
+  char *funname;
+  int paramcounter;
   int forcounter;
 };
 
@@ -40,7 +42,9 @@ struct INFO {
  */
 
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
+#define INFO_PARAMCOUNTER(n) ((n)->paramcounter)
 #define INFO_FORCOUNTER(n)  ((n)->forcounter)
+#define INFO_FUNNAME(n)  ((n)->funname)
 #define INFO_SCOPE(n)  ((n)->scope)
 
 /*
@@ -57,6 +61,8 @@ static info *MakeInfo(void)
 
   INFO_SYMBOLTABLE( tables) = NULL;
   INFO_SCOPE( tables) = NULL;
+  INFO_FUNNAME( tables) = NULL;
+  INFO_PARAMCOUNTER( tables) = 0;
   INFO_FORCOUNTER( tables) = 0;
 
   DBUG_RETURN( tables);
@@ -156,24 +162,33 @@ node *CAfundef (node *arg_node, info *arg_info)
 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
-
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
   // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
   INFO_SYMBOLTABLE(arg_info) = NULL;
-  INFO_SCOPE(arg_info) = FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)); 
+  
+  if (FUNDEF_FUNBODY(arg_node)) {
+      INFO_SCOPE(arg_info) = FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)); 
+  }
 
+  INFO_FUNNAME(arg_info) = STRcpy(FUNDEF_NAME(arg_node));
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
   // traverse into the parameters and link these to fundef scope
   TRAVopt(FUNDEF_PARAMS(arg_node),arg_info);
   
+  // reset paramcounter
+  INFO_PARAMCOUNTER(arg_info) = 0;
+
   // link these lower level scope symboltables to their corresponding node
   node *localtable = INFO_SYMBOLTABLE( arg_info);
   FUNDEF_SYMBOLENTRY(arg_node) = localtable;
 
   // add new made vardecl to the body of the current scope
-  FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
+  if (FUNDEF_FUNBODY(arg_node)) {
+      FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
+  }
+
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = globaltable;
@@ -238,8 +253,11 @@ node *CAparam(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAparam");
 
+  char *name = STRcatn(3,INFO_FUNNAME(arg_info), "_p", STRitoa(INFO_PARAMCOUNTER(arg_info)));
+  // increase paramcounter
+  INFO_PARAMCOUNTER(arg_info)++;
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL);
+  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), name, NULL);
 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);

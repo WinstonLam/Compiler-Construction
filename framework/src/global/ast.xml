@@ -44,7 +44,8 @@
             <node name="Param" />
             <node name="FunDef" />
             <node name="VarDecl"/>
-            <node name="For"/>
+            <node name="VarLet" />
+            <node name="Var" />
         </travuser>
       </traversal>
 
@@ -693,18 +694,6 @@
                     </targets>
                 </type>
             </attribute>
-             <attribute name="TableLink">
-                <type name="Link">
-                    <targets>
-                        <target mandatory="no">
-                            <node name="SymbolEntry"/>
-                            <phases>
-                                <all/>
-                            </phases>
-                        </target>
-                    </targets>
-                </type>
-            </attribute>
         </attributes>
         <flags>
         </flags>
@@ -1127,6 +1116,18 @@
                     </targets>
                 </type>
             </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
         </attributes>
     </node>
     <node name="Var">
@@ -1160,6 +1161,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
