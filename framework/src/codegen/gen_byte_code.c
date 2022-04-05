@@ -7,18 +7,28 @@
 #include "memory.h"
 #include "ctinfo.h"
 #include "globals.h"
+#include "linkedlist.h"
 
 struct INFO {
   node *symboltable;
   type currenttype;
   int count;
   FILE *file;
+
+  // linkedlist *externs;
+  linkedlist *import;
+  linkedlist *export;
+  linkedlist *constant;
 };
 
 #define INFO_SYMBOLTABLE(n) ((n)->symboltable)
 #define INFO_CURRENTTYPE(n) ((n)->currenttype)
 #define INFO_COUNT(n) ((n)->count)
 #define INFO_FILE(n) ((n)->file)
+#define INFO_GLOBAL(n) ((n)->export)
+#define INFO_CONSTANT(n) ((n)->export)
+#define INFO_IMPORT(n) ((n)->export)
+#define INFO_EXPORT(n) ((n)->export)
 
 static info *MakeInfo(void)
 {
@@ -31,8 +41,12 @@ static info *MakeInfo(void)
   INFO_SYMBOLTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
   INFO_COUNT(tables) = 0;
+  INFO_GLOBAL(tables) = NULL;
+  INFO_CONSTANT(tables) = NULL;
+  INFO_IMPORT(tables) = NULL;
+  INFO_EXPORT(tables) = NULL;
 
-  DBUG_RETURN( tables);
+  DBUG_RETURN(tables);
 }
 
 
@@ -42,9 +56,61 @@ static info *FreeInfo( info *info)
 
   info = MEMfree(info);
 
+  // TODO: Clean others
+
   DBUG_RETURN(info);
 }
 
+
+// this function will return a given node in a symboltable
+static node *GetNode(char *name, info *arg_info)
+{
+    // traverse through the symbol table untill node is found
+    node *temp = INFO_SYMBOLTABLE(arg_info);
+    while (temp) {
+        if (STReq(SYMBOLENTRY_NAME(temp), name)) {
+            return temp;
+        }
+        temp = SYMBOLENTRY_NEXT(temp);
+    }
+
+    CTIerror("Could not be found in symbol table: %s", name);
+    return temp;
+}
+
+
+static void printGlobals(info *arg_info)
+{
+  FILE *file = INFO_FILE(arg_info);
+
+  linkedlist *global = INFO_GLOBAL(arg_info);
+  while(global)
+  {
+    fprintf(file, ".global %s\n", global->data);
+    global = global->next;
+  }
+
+  linkedlist *constant = INFO_CONSTANT(arg_info);
+  while(constant)
+  {
+    fprintf(file, ".const %s\n", constant->data);
+    constant = constant->next;
+  }
+
+  linkedlist *import = INFO_IMPORT(arg_info);
+  while(import)
+  {
+    fprintf(file, ".import%s\n", import->data);
+    import = import->next;
+  }
+
+  linkedlist *export = INFO_EXPORT(arg_info);
+  while(export)
+  {
+    fprintf(file, ".export%s\n", export->data);
+    export = export->next;
+  }
+}
 
 node *GBCprogram(node *arg_node, info *arg_info)
 {
@@ -59,13 +125,49 @@ node *GBCprogram(node *arg_node, info *arg_info)
 
 // node *GBCdecls(node *arg_node, info *arg_info)
 // {
-//   DBUG_ENTER("GBCprogram");
+//   DBUG_ENTER("GBCdecls");
 
 //   DECLS_DECL(arg_node) = TRAVdo(DECLS_DECL(arg_node), arg_info);
 //   DECLS_NEXT(arg_node) = TRAVdo(DECLS_NEXT(arg_node), arg_info);
 
 //   DBUG_RETURN("GBCprogram");
 // }
+
+node *GBCglobdef(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("GBCglobdef");
+
+  if(GLOBDEF_ISEXPORT(arg_node)) {
+    //TODO: FIX INDEX
+    int index = 0;
+    char *string = STRcatn(4, "var \"", GLOBDECL_NAME(arg_node), "\" ", index);
+
+    // Add to export list
+    PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
+  }
+
+  GLOBDEF_DIMS(arg_node) = TRAVopt(GLOBDEF_DIMS(arg_node),arg_info);
+  GLOBDEF_INIT(arg_node) = TRAVopt(GLOBDEF_INIT(arg_node), arg_info);
+
+  DBUG_RETURN(arg_node);
+}
+
+
+node *GBCglobdecl(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("GBCglobdecl");
+
+  //TODO: FIX INDEX
+  int index = 0;
+  char *string = STRcatn(4, "var \"", GLOBDECL_NAME(arg_node), "\" ", index);
+
+  // Add to export list
+  PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
+
+  GLOBDECL_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
+
+  DBUG_RETURN(arg_node);
+}
 
 
 // node *GBCexprs(node *arg_node, info *arg_info)
@@ -108,6 +210,12 @@ node *GBCprogram(node *arg_node, info *arg_info)
 //   DBUG_RETURN(arg_node);
 // }
 
+// node *GBCfundef(node *arg_node, info *arg_info)
+// {
+//   DBUG_ENTER("GBCfundef");
+//   // FUNDEF_ISEXPORT()
+//   DBUG_RETURN(arg_node);
+// }
 
 node *GBCfuncall(node *arg_node, info *arg_info)
 {
@@ -452,6 +560,25 @@ node *GBCbool(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+
+node *GBCvar(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("GBCvar");
+
+  //TODO: FIND SYMBOLTABLE
+  node *vardecl = VAR_DECL(arg_node);
+  node *symboltableEntry = GetNode(VARDECL_NAME(vardecl), arg_info);
+
+  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(symboltableEntry);
+
+  if(NODE_TYPE(vardecl) == N_globdef)
+  {
+
+  }
+
+  DBUG_RETURN(arg_node);
+}
+
 /*
  * INFO structure
  */
@@ -469,24 +596,24 @@ node *GBCdoGenByteCode( node *syntaxtree)
   DBUG_ENTER("GBCdoGenByteCode");
 
   DBUG_ASSERT((syntaxtree != NULL), "GBCdoGenByteCode called with empty syntaxtree");
-  
-  info *info = MakeInfo();
+  info *arg_info = MakeInfo();
+ 
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)
   {
-    INFO_FILE(info) = fopen(global.outfile, "w");
+    INFO_FILE(arg_info) = fopen(global.outfile, "w");
   } else
   {
-    INFO_FILE(info) = stdout;
+    INFO_FILE(arg_info) = stdout;
   }
-  
+
   TRAVpush(TR_tc);
-  TRAVdo(syntaxtree, arg_info);
+  syntaxtree = TRAVdo(syntaxtree, arg_info);
   TRAVpop();
 
-  
-  info = FreeInfo(info);
+  // printGlobals(arg_info);
+  arg_info = FreeInfo(arg_info);
 
-  DBUG_RETURN( syntaxtree);
+  DBUG_RETURN(syntaxtree);
 }
