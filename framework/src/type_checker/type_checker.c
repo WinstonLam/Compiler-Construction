@@ -175,6 +175,9 @@ node *TCfuncall(node *arg_node, info *arg_info)
 
     // get symboltable entry name of the param
     char *name = STRcatn(3,FUNCALL_NAME(arg_node), STRcpy("_p"), STRitoa(INFO_PARAMCOUNTER(arg_info)));
+    // increment param counter
+    INFO_PARAMCOUNTER(arg_info)++;
+    
     // get symboltableentry node of the param
     node *paramNode = GetNode(STRcpy(name), arg_info);
 
