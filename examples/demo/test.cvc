@@ -1,10 +1,22 @@
-extern void printInt(int val);
-extern void printNewlines(int num);
+int a = 20;
+bool c;
 
-export int main() {
-    for (int i = 0, 10) {
-        printInt(i);
-    }
-    printNewlines(1);
-    return 0;
+export bool main() {
+    c = true;
+
+    return c;
 }
+
+
+int a;
+bool c;
+
+void __init() {
+  a = 20;
+}
+
+export bool main() {
+    c = true;
+
+    return c;
+} 

@@ -94,6 +94,8 @@
                              yyless(1);
                            }
 
+"//".*                    { /* none */ } 
+
 [ \t]                      { global.col += yyleng;
                            }
 

@@ -1,1 +1,3 @@
-extern int i;
+bool WhileTest() {
+    while (true && false) {}
+}

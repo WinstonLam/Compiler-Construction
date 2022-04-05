@@ -27,11 +27,13 @@
       <traversal id="COPY" name="Copy Syntax Tree" default="user" include="copy_node.h" />
       <traversal id="FREE" name="Free Syntax Tree" default="user" include="free_node.h" />
       <traversal id="CHK" name="Check Syntax Tree" default="user" include="check.h" />
+
       <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
             <node name="FunDef" />
+            <node name="Param" />
             <node name="VarDecl"/>
-            <node name="GlobDecl" />
+            <node name="GlobDef" />
             <node name="For"/>
         </travuser>
       </traversal>
@@ -39,25 +41,67 @@
       <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
         <travuser>
             <node name="Program" />
+            <node name="Param" />
             <node name="FunDef" />
             <node name="VarDecl"/>
-            <node name="For"/>
+            <node name="VarLet" />
+            <node name="Var" />
         </travuser>
       </traversal>
 
       <traversal id="BE" name="Bool Evaluation" default="sons" include="bool_evaluation.h">
         <travuser>
             <node name="BinOp" />
-            <node name="Bool" />
         </travuser>
       </traversal>
 
+      <traversal id="BC" name="Bool Cast" default="sons" include="bool_cast.h">
+        <travuser>
+            <node name="Cast" />
+        </travuser>
+      </traversal>
+
+      <traversal id ="FO" name="For Optimisation" default="sons" include="for_optimisation.h">
+        <travuser>
+            <node name="FunDef" />
+            <node name="For" />
+            <node name="Program" />
+        </travuser>
+       </traversal>
+
+       <traversal id="GT" name="Globvar Transformation" default="sons" include="globvar_transformation.h">
+        <travuser>
+            <node name="Program" />
+            <node name="GlobDef"/>
+        </travuser>
+       </traversal>
+
+      <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
+          <travuser>
+            <node name="Program" />
+            <node name="FunDef" />
+            <node name="FunBody"/>
+            <node name="FunCall"/>
+            <node name="Exprs" />
+            <node name="IfElse" />
+            <node name="DoWhile"/>
+            <node name="While"/>
+            <node name="For" />
+            <node name="BinOp" />
+            <node name="MonOp"/>
+            <node name="Assign"/>
+            <node name="Num"/>
+            <node name="Float"/>
+            <node name="Bool"/>
+        </travuser>
+      </traversal>
     </general>
-  
+
 </phases>
 <nodesets>
     <nodeset name="Expr">
         <target>
+            <node name="CondExpr" />
             <node name="BinOp"/>
             <node name="MonOp"/>
             <node name="FunCall"/>
@@ -331,16 +375,6 @@
     </node>
     <node name="FunDef">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="SymbolEntry">
                 <targets>
                     <target mandatory="no">
@@ -390,6 +424,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
@@ -594,16 +640,6 @@
     </node>
     <node name="For">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="Start">
                 <targets>
                     <target mandatory="yes">
@@ -805,20 +841,22 @@
                     </targets>
                 </type>
             </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
         </attributes>
     </node>
     <node name="VarDecl">
         <sons>
-            <son name="TableLink">
-                <targets>
-                    <target mandatory="no">
-                        <node name="SymbolEntry"/>
-                        <phases>
-                            <all/>
-                        </phases>
-                    </target>
-                </targets>
-            </son>
             <son name="Dims">
                 <targets>
                     <target mandatory="no">
@@ -868,6 +906,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
@@ -926,6 +976,41 @@
             </son>
         </sons>
         <attributes/>
+    </node>
+    <node name="CondExpr">
+        <sons>
+            <son name="Pred">
+                <targets>
+                    <target mandatory="yes">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+            <son name="Then">
+                <targets>
+                    <target mandatory="yes">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+            <son name="Else">
+                <targets>
+                    <target mandatory="no">
+                        <node name="Bool"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+        </sons>
+    <attributes/>
     </node>
     <node name="BinOp">
         <sons>
@@ -1031,6 +1116,18 @@
                     </targets>
                 </type>
             </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
         </attributes>
     </node>
     <node name="Var">
@@ -1064,6 +1161,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>

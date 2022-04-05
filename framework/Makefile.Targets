@@ -53,8 +53,8 @@
 #
 
 
-src = global scanparse print codegen framework context_analysis boolean_adjustments
 
+src = global scanparse print codegen framework context_analysis type_checker boolean_adjustments globvar_transformation for_optimisation
 
 
 ###############################################################################
@@ -81,4 +81,21 @@ codegen     = gen_byte_code.o
 
 context_analysis = context_analysis.o symboltable_linker.o
 
-boolean_adjustments = bool_evaluation.o
+
+boolean_adjustments = bool_evaluation.o bool_cast.o
+
+globvar_transformation = globvar_transformation.o
+type_checker = type_checker.o
+
+for_optimisation = for_optimisation.o
+
+TEST_DIRS := basic # nested_funs arrays preprocess
+
+TEST_CFLAGS := ""
+
+TEST_RUN_FUNCTIONAL := 1
+
+TEST_CIVAS := bin/civas
+TEST_CIVVM := bin/civvm
+
+TEST_CIVCC := bin/civicc
