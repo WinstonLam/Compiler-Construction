@@ -185,8 +185,10 @@ node *CAfundef (node *arg_node, info *arg_info)
   // reset the scope to the global scope
   INFO_SYMBOLTABLE(arg_info) = globaltable;
 
+
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL, FUNDEF_PARAMS(arg_node));
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL, COPYdoCopy(FUNDEF_PARAMS(arg_node)));
+ 
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
@@ -211,6 +213,19 @@ node *CAvardecl(node *arg_node, info *arg_info)
   DBUG_RETURN( arg_node);
 }
 
+node *CAparam(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAparam");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL, NULL);
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new, arg_node);
+
+  // search for next param if there.
+  TRAVopt(PARAM_NEXT(arg_node), arg_info);
+  DBUG_RETURN( arg_node);
+}
 
 node *CAfor(node *arg_node, info *arg_info)
 {

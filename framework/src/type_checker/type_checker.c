@@ -33,6 +33,7 @@ struct INFO {
   node *symboltable;
   node *parenttable;
   type currenttype;
+  type binoptype;	
   type fundeftype;
 };
 
@@ -42,6 +43,7 @@ struct INFO {
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_PARENTTABLE(n) ((n)->parenttable)
 #define INFO_CURRENTTYPE(n)  ((n)->currenttype)
+#define INFO_BINOPTYPE(n)  ((n)->binoptype)
 #define INFO_FUNDEFTYPE(n)  ((n)->fundeftype)
 
 /*
@@ -59,6 +61,7 @@ static info *MakeInfo(void)
   INFO_SYMBOLTABLE(tables) = NULL;
   INFO_PARENTTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
+  INFO_BINOPTYPE(tables) = T_unknown;
   INFO_FUNDEFTYPE(tables) = T_unknown;
 
   DBUG_RETURN( tables);
@@ -149,9 +152,16 @@ node *TCfundef(node *arg_node, info *arg_info)
 node *TCreturn(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCreturn");
+
+  if (!RETURN_EXPR(arg_node) && INFO_FUNDEFTYPE(arg_info) == T_void)
+    {
+        DBUG_RETURN(arg_node);
+    }
   
   // traverse into the return expression
   RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
+  
+  CTInote("TCreturn: %s", TypePrinter(INFO_CURRENTTYPE(arg_info)));
 
   // check if the return type is the same as the function type
   if (INFO_FUNDEFTYPE(arg_info) != INFO_CURRENTTYPE(arg_info)) {
@@ -202,7 +212,7 @@ node * TCexprs(node *arg_node, info *arg_info)
   // Traverse through expression
 
 
-
+  EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
   EXPRS_NEXT(arg_node) = TRAVopt(EXPRS_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
@@ -338,23 +348,19 @@ node *TCbinop(node *arg_node, info *arg_info)
 
   BINOP_RIGHT(arg_node) = TRAVdo(BINOP_RIGHT(arg_node), arg_info);
   type righttype = INFO_CURRENTTYPE(arg_info);
+  CTInote("binop %d", BINOP_OP(arg_node));
   CTInote( "left %s" , TypePrinter(lefttype)) ;
+ 
   CTInote( "right %s\n" , TypePrinter(righttype)) ;
 
   if(righttype != lefttype)
   {
     CTIerror( "Type of left expression %s does not match right type of right expression %s", TypePrinter(lefttype), TypePrinter(righttype));
-  } 
-  // else
-  // {
-  //   binop bop = (BINOP_OP(arg_node));
-  //   if (bop == BO_add || bop == BO_sub || bop == BO_mul || bop == BO_div || bop == BO_mod) {
-  //     INFO_CURRENTTYPE(arg_info) = lefttype;
-  //   }
-  //   if (bop == BO_lt || bop == BO_le || bop == BO_gt || bop == BO_ge || bop == BO_eq || bop == BO_ne || bop == BO_or || bop == BO_and) {
-  //     INFO_CURRENTTYPE(arg_info) = T_bool;
-  //   }
-  // }
+  }
+  binop bop = (BINOP_OP(arg_node));
+    if (bop == BO_lt || bop == BO_le || bop == BO_gt || bop == BO_ge || bop == BO_eq || bop == BO_ne || bop == BO_or || bop == BO_and) {
+      INFO_CURRENTTYPE(arg_info) = T_bool;
+    }  
 
   DBUG_RETURN(arg_node);
 }
@@ -376,6 +382,14 @@ node *TCassign(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node *TCvar(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCvar");
+  DBUG_PRINT("TC", ("var %s", VAR_NAME(arg_node)));
+  node *node = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info),arg_node,INFO_PARENTTABLE(arg_info));
+  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(node);
+  DBUG_RETURN(arg_node);
+}
 
 node *TCnum(node *arg_node, info *arg_info)
 {

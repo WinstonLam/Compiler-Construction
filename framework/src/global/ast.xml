@@ -32,6 +32,7 @@
         <travuser>
             <node name="FunDef" />
             <node name="VarDecl"/>
+            <node name="Param"/>
             <node name="GlobDef" />
             <node name="For"/>
         </travuser>
@@ -62,6 +63,7 @@
             <node name="MonOp"/>
             <node name="Assign"/>
             <node name="Num"/>
+            <node name="Var"/>
             <node name="Return"/>
             <node name="Float"/>
             <node name="Bool"/>
