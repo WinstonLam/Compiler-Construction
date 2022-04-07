@@ -75,6 +75,7 @@ node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
 
     node *temp = symboltable;
     while (temp) {
+        DBUG_PRINT("CA", ("temp name: %s", SYMBOLENTRY_NAME(temp)));
         if (STReq(SYMBOLENTRY_NAME(temp),entry)) {
             DBUG_PRINT("GetNode", ("Found node %s", entry));
             return temp;
@@ -158,17 +159,6 @@ node *SLvardecl(node *arg_node, info *arg_info)
 
     // search for next vardecl if there.
     TRAVopt(VARDECL_NEXT(arg_node), arg_info);
-
-    DBUG_RETURN( arg_node);
-}
-
-node *SLparam(node *arg_node, info *arg_info)
-{
-    DBUG_ENTER("SLparam");
-
-    PARAM_TABLELINK(arg_node) = GetNode((PARAM_NAME(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
-
-    TRAVopt(PARAM_NEXT(arg_node), arg_info);
 
     DBUG_RETURN( arg_node);
 }

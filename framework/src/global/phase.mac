@@ -65,17 +65,18 @@ SUBPHASE( fo,
           pet)
 
 
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
+          ALWAYS,
+          pet)
+
 SUBPHASE( gt,
           "Globvar Transformation",
           GTdoGlobvarTransformation,
           ALWAYS,
           pet)
 
-SUBPHASE( tc,
-          "Type checker",
-          TCdoTypeChecking,
-          ALWAYS,
-          pet)
 
 
 ENDPHASE( pet)
@@ -85,7 +86,7 @@ ENDPHASE( pet)
 
 PHASE( cg,
        "Generating Code",
-       ALWAYS)
+       NEVER)
 
 SUBPHASE( prt, "Generating byte code", GBCdoGenByteCode, ALWAYS, cg)
 SUBPHASE( prt_ast, "Print ast", PRTdoPrint, ALWAYS, cg)

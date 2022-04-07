@@ -31,8 +31,8 @@
       <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
             <node name="FunDef" />
-            <node name="Param" />
             <node name="VarDecl"/>
+            <node name="Param"/>
             <node name="GlobDef" />
             <node name="For"/>
         </travuser>
@@ -41,11 +41,32 @@
       <traversal id="SL" name="Symboltable Linker" default="sons" include="symboltable_linker.h">
         <travuser>
             <node name="Program" />
-            <node name="Param" />
             <node name="FunDef" />
             <node name="VarDecl"/>
             <node name="VarLet" />
             <node name="Var" />
+        </travuser>
+      </traversal>
+
+        <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
+          <travuser>
+            <node name="Program" />
+            <node name="FunDef" />
+            <node name="FunBody"/>
+            <node name="FunCall"/>
+            <node name="Exprs" />
+            <node name="IfElse" />
+            <node name="DoWhile"/>
+            <node name="While"/>
+            <node name="For" />
+            <node name="BinOp" />
+            <node name="MonOp"/>
+            <node name="Assign"/>
+            <node name="Num"/>
+            <node name="Var"/>
+            <node name="Return"/>
+            <node name="Float"/>
+            <node name="Bool"/>
         </travuser>
       </traversal>
 
@@ -76,25 +97,7 @@
         </travuser>
        </traversal>
 
-      <traversal id="TC" name="Type Checker" default="sons" include="type_checker.h">
-          <travuser>
-            <node name="Program" />
-            <node name="FunDef" />
-            <node name="FunBody"/>
-            <node name="FunCall"/>
-            <node name="Exprs" />
-            <node name="IfElse" />
-            <node name="DoWhile"/>
-            <node name="While"/>
-            <node name="For" />
-            <node name="BinOp" />
-            <node name="MonOp"/>
-            <node name="Assign"/>
-            <node name="Num"/>
-            <node name="Float"/>
-            <node name="Bool"/>
-        </travuser>
-      </traversal>
+    
     </general>
 
 </phases>
@@ -454,6 +457,16 @@
                 <targets>
                     <target mandatory ="no">
                         <node name="SymbolEntry"/>
+                        <phases>
+                            <all/>
+                        </phases>
+                    </target>
+                </targets>
+            </son>
+             <son name="Params">
+                <targets>
+                    <target mandatory ="no">
+                        <node name="Exprs"/>
                         <phases>
                             <all/>
                         </phases>

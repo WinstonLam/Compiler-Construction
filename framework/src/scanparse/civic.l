@@ -28,7 +28,7 @@
 %e 2000 /* set nodes to 1100 */
 %option noyywrap
 %option nounput
-%option debug
+
 
 
 %%
@@ -81,7 +81,10 @@
                              FILTER( ID);
                            }
 
-[0-9]+                     { yylval.cint=atoi(yytext);
+[0-9]+                     { if (strtol(yytext, 0, 10) > 2147483649) {
+                              CTIerror("Integer %s out of range", yytext);
+                           }
+                             yylval.cint=atoi(yytext);
                              FILTER( NUM);
                            }
 
@@ -94,7 +97,10 @@
                              yyless(1);
                            }
 
-"//".*                    { /* none */ } 
+"//".*                                    { /* none */ } 
+"/*"((\*+[^/*])|([^*]))*\**"*/"           { /* none */ }
+[ \t\n]+                                  { /* none */ }
+
 
 [ \t]                      { global.col += yyleng;
                            }

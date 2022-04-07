@@ -31,6 +31,7 @@
 
 struct INFO {
   node *scope;
+  int var_count;
 };
 
 /*
@@ -38,6 +39,7 @@ struct INFO {
  */
 
 #define INFO_SCOPE(n)  ((n)->scope)
+#define INFO_VAR_COUNT(n)  ((n)->var_count)
 
 
 /*
@@ -53,6 +55,7 @@ static info *MakeInfo(void)
   result = (info *)MEMmalloc(sizeof(info));
 
   INFO_SCOPE( result) = NULL;
+  INFO_VAR_COUNT( result) = 0;
 
   DBUG_RETURN( result);
 }
@@ -101,11 +104,11 @@ node *FOfor (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("FOfor");
 
-  char *name =  FOR_LOOPVAR(arg_node);
+  char *name =  STRcatn(3, FOR_LOOPVAR(arg_node), "_", STRitoa(INFO_VAR_COUNT(arg_info))); 
+  INFO_VAR_COUNT(arg_info)++;
 
   node *block = FOR_BLOCK(arg_node);
   if (block) {
-    CTInote("There is a block");
     while(STMTS_NEXT(block)) {
       block = STMTS_NEXT(block);
     }
@@ -117,8 +120,6 @@ node *FOfor (node *arg_node, info *arg_info)
 
   // make a new while with the values of the for loop
   node *new = TBmakeWhile(TBmakeBinop(BO_lt, TBmakeVarlet(STRcpy(name), NULL, NULL ), COPYdoCopy(FOR_STOP(arg_node))), COPYdoCopy(block));
-
-  CTInote("new has been made");
 
   //  traverse into the new while loop body
   TRAVopt(WHILE_BLOCK(new),arg_info);

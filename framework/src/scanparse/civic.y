@@ -151,9 +151,13 @@ vardecl: type ID LET expr SEMICOLON vardecl
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL);
       }
-      | type ID SEMICOLON
+      | type ID SEMICOLON 
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL);
+      }
+      | type ID SEMICOLON vardecl
+      {
+        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $4);
       }
       ;
 
@@ -296,6 +300,10 @@ funcall: ID BRACKET_L BRACKET_R SEMICOLON
       | ID BRACKET_L exprs BRACKET_R SEMICOLON
       {
         $$ = TBmakeFuncall(STRcpy($1), NULL, $3);
+      }
+      | ID BRACKET_L BRACKET_R
+      {
+        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL);
       }
       ;
 

@@ -145,7 +145,7 @@ node *CAglobdef (node *arg_node, info *arg_info)
   DBUG_ENTER("CAglobdef");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), NULL);
+  node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
@@ -157,11 +157,6 @@ node *CAfundef (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfundef");
 
-  // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL);
-
-  // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new, arg_node);
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
   // set the symbol table to NULL for one scope deeper to start with fresh symbol table.
@@ -172,11 +167,10 @@ node *CAfundef (node *arg_node, info *arg_info)
   }
 
   INFO_FUNNAME(arg_info) = STRcpy(FUNDEF_NAME(arg_node));
+   // traverse into the parameters and link these to fundef scope
+  TRAVopt(FUNDEF_PARAMS(arg_node),arg_info);
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
-  // traverse into the parameters and link these to fundef scope
-  TRAVopt(FUNDEF_PARAMS(arg_node),arg_info);
-  
   // reset paramcounter
   INFO_PARAMCOUNTER(arg_info) = 0;
 
@@ -188,12 +182,18 @@ node *CAfundef (node *arg_node, info *arg_info)
   if (FUNDEF_FUNBODY(arg_node)) {
       FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
   }
-
-
-  // reset global scope symboltable
+  // reset the scope to the global scope
   INFO_SYMBOLTABLE(arg_info) = globaltable;
-  DBUG_RETURN( arg_node);
-}
+
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL, COPYdoCopy(FUNDEF_PARAMS(arg_node)));
+ 
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new, arg_node);
+
+  DBUG_RETURN(arg_node);
+  }
 
 
 node *CAvardecl(node *arg_node, info *arg_info)
@@ -204,7 +204,7 @@ node *CAvardecl(node *arg_node, info *arg_info)
     TRAVopt(VARDECL_INIT(arg_node),arg_info);
   }
    // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL);
+  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
@@ -213,13 +213,26 @@ node *CAvardecl(node *arg_node, info *arg_info)
   DBUG_RETURN( arg_node);
 }
 
+node *CAparam(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAparam");
+
+  // create new node to add to symboltable
+  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL, NULL);
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new, arg_node);
+
+  // search for next param if there.
+  TRAVopt(PARAM_NEXT(arg_node), arg_info);
+  DBUG_RETURN( arg_node);
+}
 
 node *CAfor(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfor");
 
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL);
+  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL, NULL);
 
   // if instance variable is reused in the nested for loop then rename
   node *renamed = RenameCheck(arg_info, COPYdoCopy(new));
@@ -249,24 +262,6 @@ node *CAfor(node *arg_node, info *arg_info)
 
 }
 
-node *CAparam(node *arg_node, info *arg_info)
-{
-  DBUG_ENTER("CAparam");
-
-  char *name = STRcatn(3,INFO_FUNNAME(arg_info), "_p", STRitoa(INFO_PARAMCOUNTER(arg_info)));
-  // increase paramcounter
-  INFO_PARAMCOUNTER(arg_info)++;
-  // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), name, NULL);
-
-  // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new, arg_node);
-
-  // search for next param if there.
-  TRAVopt(PARAM_NEXT(arg_node), arg_info);
-  DBUG_RETURN( arg_node);
-
-}
 /*
  * Traversal start function
  */

@@ -1,4 +1,0 @@
-int tests() {
-    int x;
-    x = true;
-}

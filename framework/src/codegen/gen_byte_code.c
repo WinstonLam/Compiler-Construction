@@ -583,10 +583,10 @@ node *GBCvar(node *arg_node, info *arg_info)
  * INFO structure
  */
 
-struct INFO {
-  node *symboltable;
-  // TODO: Constant pool
-};
+// struct INFO {
+//   node *symboltable;
+//   // TODO: Constant pool
+// };
 
 /*
  * Traversal start function
@@ -596,8 +596,8 @@ node *GBCdoGenByteCode( node *syntaxtree)
   DBUG_ENTER("GBCdoGenByteCode");
 
   DBUG_ASSERT((syntaxtree != NULL), "GBCdoGenByteCode called with empty syntaxtree");
+
   info *arg_info = MakeInfo();
- 
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)

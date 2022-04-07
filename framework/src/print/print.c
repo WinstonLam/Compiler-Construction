@@ -719,9 +719,21 @@ PRTmonop(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTmonop");
 
+  if (MONOP_OP(arg_node) == MO_not)
+  {
+    printf("!");
+  }
+  else if (MONOP_OP(arg_node) == MO_neg)
+  {
+    printf("-");
+  }
+  else if (MONOP_OP(arg_node) == MO_unknown)
+  {
+    DBUG_ASSERT(0, "Detected nknown monop");
+  } 
+
   MONOP_OPERAND(arg_node) = TRAVdo(MONOP_OPERAND(arg_node), arg_info);
 
-  printf("%d", MONOP_OP(arg_node));
   DBUG_RETURN(arg_node);
 }
 
