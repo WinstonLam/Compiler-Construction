@@ -1,4 +1,4 @@
-void test_do_while2()
+void test_do_while()
 {
     int x = 0;
     int y = 10;

@@ -20,8 +20,10 @@
 #include "traverse.h"
 #include "dbug.h"
 #include "str.h"
+#include "free.h"
 #include "memory.h"
 #include "ctinfo.h"
+#include "copy.h"
 
 /*
  * INFO structure
@@ -32,7 +34,6 @@ struct INFO {
   node *parenttable;
   type currenttype;
   type fundeftype;
-  int paramcounter;
 };
 
 /*
@@ -41,7 +42,6 @@ struct INFO {
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_PARENTTABLE(n) ((n)->parenttable)
 #define INFO_CURRENTTYPE(n)  ((n)->currenttype)
-#define INFO_PARAMCOUNTER(n)  ((n)->paramcounter)
 #define INFO_FUNDEFTYPE(n)  ((n)->fundeftype)
 
 /*
@@ -60,7 +60,6 @@ static info *MakeInfo(void)
   INFO_PARENTTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
   INFO_FUNDEFTYPE(tables) = T_unknown;
-  INFO_PARAMCOUNTER(tables) = 0;
 
   DBUG_RETURN( tables);
 }
@@ -150,7 +149,7 @@ node *TCfundef(node *arg_node, info *arg_info)
 node *TCreturn(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCreturn");
-
+  
   // traverse into the return expression
   RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
 
@@ -165,39 +164,34 @@ node *TCreturn(node *arg_node, info *arg_info)
 node *TCfuncall(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfuncall");
-
+  
   // get the first param
   node *temp = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
+  node *param = COPYdoCopy(SYMBOLENTRY_PARAMS(GetNode(FUNCALL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info))));
 
   // check for each param if the given type corresponds
   while (temp) {
 
-    // get symboltable entry name of the param
-    char *name = STRcatn(3,FUNCALL_NAME(arg_node), STRcpy("_p"), STRitoa(INFO_PARAMCOUNTER(arg_info)));
-    // increment param counter
-    INFO_PARAMCOUNTER(arg_info)++;
-    
-    // get symboltableentry node of the param
-    node *paramNode = GetNode(STRcpy(name), INFO_SYMBOLTABLE(arg_info) ,arg_node, INFO_PARENTTABLE(arg_info));
-
+    if(!param) {
+      CTIerror("called function %s with too many arguments", FUNCALL_NAME(arg_node));
+    }
     // traverse down the expressions of the parameter
-    EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
-    type currenttype = INFO_CURRENTTYPE(arg_info);
+    TRAVdo(EXPRS_EXPR(temp), arg_info);
+    type temptype = INFO_CURRENTTYPE(arg_info);
+    CTInote("test");
+    type paramtype = PARAM_TYPE(param);
 
     // check if the type of the param is the same as the type of the expression
-    if (currenttype != T_unknown) {
-      if (currenttype != SYMBOLENTRY_TYPE(paramNode)) {
-        CTIerror( "Expected parameter of type %s but got %s", TypePrinter(SYMBOLENTRY_TYPE(paramNode)), TypePrinter(currenttype));
+    if (temptype != T_unknown) {
+      if (temptype != paramtype) {
+        CTIerror( "Expected parameter of type %s but got %s", TypePrinter(paramtype), TypePrinter(temptype));
       }
     }
-
+    param = TRAVopt(PARAM_NEXT(param), arg_info);
     temp = TRAVopt(EXPRS_NEXT(temp), arg_info);
-
   }
 
   INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(STRcpy(FUNCALL_NAME(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node,INFO_PARENTTABLE(arg_info)));
-  // reset paramcounter
-  INFO_PARAMCOUNTER(arg_info) = 0;
   DBUG_RETURN(arg_node);
 }
 
@@ -218,7 +212,7 @@ node * TCexprs(node *arg_node, info *arg_info)
 node *TCfunbody(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfunbody");
-
+  FUNBODY_VARDECLS(arg_node) = TRAVopt(FUNBODY_VARDECLS(arg_node), arg_info);
   FUNBODY_STMTS(arg_node) = TRAVopt(FUNBODY_STMTS(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
@@ -249,7 +243,7 @@ node *TCifelse(node *arg_node, info *arg_info)
 node *TCdowhile(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCdowhile");
-
+  
   DOWHILE_COND(arg_node) = TRAVdo(DOWHILE_COND(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
 
@@ -344,14 +338,23 @@ node *TCbinop(node *arg_node, info *arg_info)
 
   BINOP_RIGHT(arg_node) = TRAVdo(BINOP_RIGHT(arg_node), arg_info);
   type righttype = INFO_CURRENTTYPE(arg_info);
+  CTInote( "left %s" , TypePrinter(lefttype)) ;
+  CTInote( "right %s\n" , TypePrinter(righttype)) ;
 
   if(righttype != lefttype)
   {
     CTIerror( "Type of left expression %s does not match right type of right expression %s", TypePrinter(lefttype), TypePrinter(righttype));
-  } else
-  {
-    INFO_CURRENTTYPE(arg_info) = lefttype;
-  }
+  } 
+  // else
+  // {
+  //   binop bop = (BINOP_OP(arg_node));
+  //   if (bop == BO_add || bop == BO_sub || bop == BO_mul || bop == BO_div || bop == BO_mod) {
+  //     INFO_CURRENTTYPE(arg_info) = lefttype;
+  //   }
+  //   if (bop == BO_lt || bop == BO_le || bop == BO_gt || bop == BO_ge || bop == BO_eq || bop == BO_ne || bop == BO_or || bop == BO_and) {
+  //     INFO_CURRENTTYPE(arg_info) = T_bool;
+  //   }
+  // }
 
   DBUG_RETURN(arg_node);
 }
@@ -361,19 +364,15 @@ node *TCassign(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCassign");
 
-  ASSIGN_EXPR(arg_node) = TRAVopt(ASSIGN_EXPR(arg_node), arg_info);
+  ASSIGN_EXPR(arg_node) = TRAVdo(ASSIGN_EXPR(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
-  CTInote("Linked variable %s to global scope",TypePrinter(currenttype));
-
-  node *symbolnode = GetNode(VARLET_NAME(ASSIGN_LET(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
-  type nodetype = SYMBOLENTRY_TYPE(symbolnode);
-  CTInote("Linked variable %s to global scope",TypePrinter(nodetype));
-
-  if(nodetype != currenttype)
-  {
-    CTIerror( "Type of variable %s does not match assigned type %s", TypePrinter(nodetype), TypePrinter(currenttype));
+  if (ASSIGN_LET(arg_node)) {
+    
+    if(SYMBOLENTRY_TYPE(VARLET_TABLELINK(ASSIGN_LET(arg_node))) != currenttype)
+    {
+      CTIerror( "Type of variable %s does not match assigned type %s", TypePrinter(SYMBOLENTRY_TYPE(VARLET_TABLELINK(ASSIGN_LET(arg_node)))), TypePrinter(currenttype));
+    }
   }
-
   DBUG_RETURN(arg_node);
 }
 
@@ -400,7 +399,7 @@ node *TCfloat(node *arg_node, info *arg_info)
 
 node *TCbool(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("TCnum");
+  DBUG_ENTER("TCbool");
 
   INFO_CURRENTTYPE(arg_info) = T_bool;
 

@@ -1,8 +1,3 @@
-extern void printInt(int val);
 
-int a = 10;
+int a;
 
-export int main() {
-    printInt(a);
-    return 0;
-}

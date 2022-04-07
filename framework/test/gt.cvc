@@ -1,7 +1,0 @@
-
-int a = 20;
-
-int main() {
-    printInt(a);
-    return 0;
-}

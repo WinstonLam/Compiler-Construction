@@ -28,7 +28,7 @@
 %e 2000 /* set nodes to 1100 */
 %option noyywrap
 %option nounput
-%option debug
+
 
 
 %%

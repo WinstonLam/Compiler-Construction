@@ -456,10 +456,10 @@ node *GBCbool(node *arg_node, info *arg_info)
  * INFO structure
  */
 
-struct INFO {
-  node *symboltable;
-  // TODO: Constant pool
-};
+// struct INFO {
+//   node *symboltable;
+//   // TODO: Constant pool
+// };
 
 /*
  * Traversal start function
@@ -470,15 +470,17 @@ node *GBCdoGenByteCode( node *syntaxtree)
 
   DBUG_ASSERT((syntaxtree != NULL), "GBCdoGenByteCode called with empty syntaxtree");
   
-  info *info = MakeInfo();
+  info *arg_info;
+
+  arg_info = MakeInfo();
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)
   {
-    INFO_FILE(info) = fopen(global.outfile, "w");
+    INFO_FILE(arg_info) = fopen(global.outfile, "w");
   } else
   {
-    INFO_FILE(info) = stdout;
+    INFO_FILE(arg_info) = stdout;
   }
   
   TRAVpush(TR_tc);
@@ -486,7 +488,7 @@ node *GBCdoGenByteCode( node *syntaxtree)
   TRAVpop();
 
   
-  info = FreeInfo(info);
+  arg_info = FreeInfo( arg_info);
 
   DBUG_RETURN( syntaxtree);
 }

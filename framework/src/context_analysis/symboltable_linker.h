@@ -7,7 +7,6 @@ extern node *SLfundef(node *arg_node, info *arg_info);
 extern node *SLvardecl(node *arg_node, info *arg_info);
 extern node *SLvar(node *arg_node, info *arg_info);
 extern node *SLvarlet(node *arg_node, info *arg_info);
-extern node *SLparam(node *arg_node, info *arg_info);
 extern node *SLprogram(node *arg_node, info *arg_info);
 extern node *SLdoSymboltableLinker( node *syntaxtree);
 

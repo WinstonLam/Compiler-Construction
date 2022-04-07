@@ -1,3 +1,0 @@
-bool WhileTest() {
-    while (true && false) {}
-}
