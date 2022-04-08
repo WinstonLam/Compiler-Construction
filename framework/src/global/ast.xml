@@ -32,6 +32,7 @@
         <travuser>
             <node name="FunDef" />
             <node name="VarDecl"/>
+            <node name="Var"/>
             <node name="Param"/>
             <node name="GlobDef" />
             <node name="For"/>
@@ -58,12 +59,13 @@
             <node name="IfElse" />
             <node name="DoWhile"/>
             <node name="While"/>
+            <node name="Var"/>
+            <node name="Cast"/>
             <node name="For" />
             <node name="BinOp" />
             <node name="MonOp"/>
             <node name="Assign"/>
             <node name="Num"/>
-            <node name="Var"/>
             <node name="Return"/>
             <node name="Float"/>
             <node name="Bool"/>
@@ -510,6 +512,18 @@
             </attribute>
             <attribute name="Name">
                 <type name="String">
+                    <targets>
+                        <target mandatory="yes">
+                            <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="Offset">
+                <type name="Int">
                     <targets>
                         <target mandatory="yes">
                             <any/>

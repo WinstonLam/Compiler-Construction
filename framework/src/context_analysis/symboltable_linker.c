@@ -100,6 +100,14 @@ node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
     }
     DBUG_RETURN(temp);
 
+int GetParamcount (node *entry) {
+    node *temp = SYMBOLENTRY_PARAMS(FUNDEF_TABLELINK(entry));
+    int count = 0;
+    while (temp) {
+        count++;
+        temp = PARAM_NEXT(temp);
+    }
+    return count;
 }
 
 /*

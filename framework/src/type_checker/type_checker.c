@@ -123,7 +123,7 @@ node *TCprogram(node *arg_node, info *arg_info)
 node *TCfundef(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfundef");
-
+  CTInote("param count %d" ,GetParamcount(arg_node));
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
 
@@ -131,10 +131,6 @@ node *TCfundef(node *arg_node, info *arg_info)
   //  for one scope deeper to continue with its symbol table.
   INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLENTRY(arg_node);
   INFO_PARENTTABLE(arg_info) = globaltable;
-  
-  if(!INFO_SYMBOLTABLE(arg_info)) {
-      CTInote("EMPTY SYMBOL TABLE");
-  }
 
 
   INFO_CURRENTTYPE(arg_info) = FUNDEF_TYPE(arg_node);
@@ -144,7 +140,7 @@ node *TCfundef(node *arg_node, info *arg_info)
 
   // reset global scope symboltable
   INFO_SYMBOLTABLE(arg_info) = globaltable;
-  INFO_PARENTTABLE(arg_info) = NULL;
+  INFO_PARENTTABLE(arg_info) = NULL; 
 
   DBUG_RETURN(arg_node);
 }
@@ -177,7 +173,8 @@ node *TCfuncall(node *arg_node, info *arg_info)
   
   // get the first param
   node *temp = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
-  node *param = COPYdoCopy(SYMBOLENTRY_PARAMS(GetNode(FUNCALL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info))));
+  
+  node *param = SYMBOLENTRY_PARAMS(GetNode(FUNCALL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
 
   // check for each param if the given type corresponds
   while (temp) {
@@ -185,10 +182,10 @@ node *TCfuncall(node *arg_node, info *arg_info)
     if(!param) {
       CTIerror("called function %s with too many arguments", FUNCALL_NAME(arg_node));
     }
+
     // traverse down the expressions of the parameter
     TRAVdo(EXPRS_EXPR(temp), arg_info);
     type temptype = INFO_CURRENTTYPE(arg_info);
-    CTInote("test");
     type paramtype = PARAM_TYPE(param);
 
     // check if the type of the param is the same as the type of the expression
@@ -202,6 +199,7 @@ node *TCfuncall(node *arg_node, info *arg_info)
   }
 
   INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(STRcpy(FUNCALL_NAME(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node,INFO_PARENTTABLE(arg_info)));
+  CTInote("test");
   DBUG_RETURN(arg_node);
 }
 
@@ -209,9 +207,7 @@ node * TCexprs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCexprs");
 
-  // Traverse through expression
-
-
+  // Traverse through expressions
   EXPRS_EXPR(arg_node) = TRAVdo(EXPRS_EXPR(arg_node), arg_info);
   EXPRS_NEXT(arg_node) = TRAVopt(EXPRS_NEXT(arg_node), arg_info);
 
@@ -249,6 +245,15 @@ node *TCifelse(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node *TCcast(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCcast");
+
+  // Traverse down the expression
+  INFO_CURRENTTYPE(arg_info) = CAST_TYPE(arg_node);
+  
+  DBUG_RETURN(arg_node);
+}
 
 node *TCdowhile(node *arg_node, info *arg_info)
 {
@@ -323,14 +328,14 @@ node *TCfor(node *arg_node, info *arg_info)
 
 node * TCmonop(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("TCnum");
+  DBUG_ENTER("TCmonop");
 
   monop op = MONOP_OP(arg_node);
   // Traverse to yield operand type to get ty[e]
   MONOP_OPERAND(arg_node) = TRAVdo(MONOP_OPERAND(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
 
-  if ((op == MO_not && currenttype == T_bool) || (op == MO_neg && currenttype != T_bool))
+  if ((op == MO_not && currenttype != T_bool) || (op == MO_neg && currenttype == T_bool))
   {
     CTIerror("Type of op %u does not match type %s", op, TypePrinter(currenttype));
   }
@@ -343,15 +348,14 @@ node *TCbinop(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCbinop");
 
-  BINOP_LEFT(arg_node) = TRAVdo(BINOP_LEFT(arg_node), arg_info);
+  BINOP_LEFT(arg_node) = TRAVopt(BINOP_LEFT(arg_node), arg_info);
   type lefttype = INFO_CURRENTTYPE(arg_info);
+   
+  BINOP_RIGHT(arg_node) = TRAVopt(BINOP_RIGHT(arg_node), arg_info);
 
-  BINOP_RIGHT(arg_node) = TRAVdo(BINOP_RIGHT(arg_node), arg_info);
   type righttype = INFO_CURRENTTYPE(arg_info);
-  CTInote("binop %d", BINOP_OP(arg_node));
-  CTInote( "left %s" , TypePrinter(lefttype)) ;
- 
-  CTInote( "right %s\n" , TypePrinter(righttype)) ;
+
+  
 
   if(righttype != lefttype)
   {
@@ -360,8 +364,8 @@ node *TCbinop(node *arg_node, info *arg_info)
   binop bop = (BINOP_OP(arg_node));
     if (bop == BO_lt || bop == BO_le || bop == BO_gt || bop == BO_ge || bop == BO_eq || bop == BO_ne || bop == BO_or || bop == BO_and) {
       INFO_CURRENTTYPE(arg_info) = T_bool;
-    }  
-
+    }
+ 
   DBUG_RETURN(arg_node);
 }
 
@@ -369,12 +373,13 @@ node *TCbinop(node *arg_node, info *arg_info)
 node *TCassign(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCassign");
-
-  ASSIGN_EXPR(arg_node) = TRAVdo(ASSIGN_EXPR(arg_node), arg_info);
+  type let = SYMBOLENTRY_TYPE(GetNode(VARLET_NAME(ASSIGN_LET(arg_node)),INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
+  
+  ASSIGN_EXPR(arg_node) = TRAVopt(ASSIGN_EXPR(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
   if (ASSIGN_LET(arg_node)) {
     
-    if(SYMBOLENTRY_TYPE(VARLET_TABLELINK(ASSIGN_LET(arg_node))) != currenttype)
+    if(let != currenttype)
     {
       CTIerror( "Type of variable %s does not match assigned type %s", TypePrinter(SYMBOLENTRY_TYPE(VARLET_TABLELINK(ASSIGN_LET(arg_node)))), TypePrinter(currenttype));
     }
@@ -386,7 +391,9 @@ node *TCvar(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCvar");
   DBUG_PRINT("TC", ("var %s", VAR_NAME(arg_node)));
+  CTInote("looking at var %s", VAR_NAME(arg_node));
   node *node = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info),arg_node,INFO_PARENTTABLE(arg_info));
+
   INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(node);
   DBUG_RETURN(arg_node);
 }
