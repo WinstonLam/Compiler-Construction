@@ -367,13 +367,6 @@ assign: varlet LET expr SEMICOLON
       }
       ;
 
-
-exprstmt: expr SEMICOLON
-        {
-          $$ = TBmakeExprstmt( $1);
-        }
-        ;
-
 ifelse: IF BRACKET_L expr BRACKET_R block ELSE block
       {
         $$ = TBmakeIfelse($3, $5, $7);
