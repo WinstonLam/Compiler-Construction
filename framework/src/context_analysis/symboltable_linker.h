@@ -9,5 +9,6 @@ extern node *SLvar(node *arg_node, info *arg_info);
 extern node *SLvarlet(node *arg_node, info *arg_info);
 extern node *SLprogram(node *arg_node, info *arg_info);
 extern node *SLdoSymboltableLinker( node *syntaxtree);
+extern size_t CountVarDecls(node *table);
 
 #endif

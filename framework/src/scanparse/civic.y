@@ -50,7 +50,7 @@ static int yyerror( char *errname);
 %type <node> intval boolval floatval
 %type <node> stmts stmt
 %type <node> block
-%type <node> assign varlet for dowhile while return ifelse funcall
+%type <node> assign varlet for dowhile while return ifelse funcall exprstmt
 
 //assign varlet
 // %type <cbinop> binop
@@ -60,6 +60,23 @@ static int yyerror( char *errname);
 %precedence THEN
 /* %precedence ELSE */
 
+/* %right CAST THEN */
+%left OR AND
+%right EQ
+%left NE
+%left LE LT GE GT
+%left STAR SLASH PERCENT
+%right UMINUS FACTORIAL
+%left MINUS PLUS
+
+/* %left OR
+%left AND
+%left EQ NE
+%left LT GT LET LE GE
+%left PLUS MINUS
+%left STAR SLASH PERCENT
+%right NEG CAST
+
 %left MINUS PLUS
 %right UMINUS FACTORIAL
 %left STAR SLASH PERCENT
@@ -67,6 +84,7 @@ static int yyerror( char *errname);
 %left NE
 %right EQ
 %left OR AND
+%right CAST THEN */
 
 %nonassoc ID
 %nonassoc ELSE
@@ -132,10 +150,12 @@ fundef: EXPORT type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       | EXTERN type ID BRACKET_L param BRACKET_R SEMICOLON
       {
         $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, $5);
+        FUNDEF_ISEXTERN($$) = 1;
       }
       | EXTERN type ID BRACKET_L BRACKET_R SEMICOLON
       {
         $$ = TBmakeFundef($2, STRcpy($3), NULL, NULL, NULL);
+        FUNDEF_ISEXTERN($$) = 1;
       }
       ;
 
@@ -143,15 +163,11 @@ vardecl: type ID LET expr SEMICOLON vardecl
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, $6);
       }
-      | type ID LET SEMICOLON vardecl
-      {
-        $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, $5);
-      }
       | type ID LET expr SEMICOLON
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, $4, NULL);
       }
-      | type ID SEMICOLON 
+      | type ID SEMICOLON
       {
         $$ = TBmakeVardecl(STRcpy($2), $1, NULL, NULL, NULL);
       }
@@ -183,16 +199,17 @@ param: type ID
       {
         $$ = TBmakeParam(STRcpy($2), $1, NULL, NULL);
       }
+      | type ID COMMA param
+      {
+        $$ = TBmakeParam(STRcpy($2), $1, NULL, $4);
+      }
+
       ;
 
 globdef: EXPORT type ID LET expr SEMICOLON
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), NULL, $5);
         GLOBDEF_ISEXPORT($$) = 1;
-      }
-      | type ID SEMICOLON
-      {
-        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, NULL);
       }
       | EXPORT type ID SEMICOLON
       {
@@ -202,6 +219,10 @@ globdef: EXPORT type ID LET expr SEMICOLON
       | type ID LET expr SEMICOLON
       {
         $$ = TBmakeGlobdef($1, STRcpy($2), NULL, $4);
+      }
+      | type ID SEMICOLON
+      {
+        $$ = TBmakeGlobdef($1, STRcpy($2), NULL, NULL);
       }
       ;
 
@@ -293,11 +314,7 @@ expr: constant
       }
       ;
 
-funcall: ID BRACKET_L BRACKET_R SEMICOLON
-      {
-        $$ = TBmakeFuncall(STRcpy($1), NULL, NULL);
-      }
-      | ID BRACKET_L exprs BRACKET_R SEMICOLON
+funcall:  ID BRACKET_L exprs BRACKET_R
       {
         $$ = TBmakeFuncall(STRcpy($1), NULL, $3);
       }
@@ -331,9 +348,9 @@ stmts: stmt stmts
       }
       ;
 
-stmt: funcall
+stmt: exprstmt
       {
-        $$ = TBmakeExprstmt($1);
+        $$ = $1;
       }
       | assign
       {
@@ -367,11 +384,18 @@ assign: varlet LET expr SEMICOLON
       }
       ;
 
+
+exprstmt: expr SEMICOLON
+        {
+          $$ = TBmakeExprstmt( $1);
+        }
+        ;
+
 ifelse: IF BRACKET_L expr BRACKET_R block ELSE block
       {
         $$ = TBmakeIfelse($3, $5, $7);
       }
-      |IF BRACKET_L expr BRACKET_R block %prec THEN
+      | IF BRACKET_L expr BRACKET_R block %prec THEN
       {
         $$ = TBmakeIfelse($3, $5, NULL);
       }

@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "dbug.h"
+
 
 linkedlist *PushIfExistElseCreate(linkedlist *list, char *data) {
     if(list)
@@ -19,6 +21,8 @@ linkedlist *New(linkedlist *next, char *data)
     struct linkedlist* linkedlist = (struct linkedlist*)malloc(sizeof(struct linkedlist));
     linkedlist->data = data;
     linkedlist->next = next;
+
+    DBUG_PRINT("GBC", ("%s", linkedlist));
 
     return linkedlist;
 }

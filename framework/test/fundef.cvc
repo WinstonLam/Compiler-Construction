@@ -1,0 +1,44 @@
+// extern int externFundef (int i); // ERROR: at insertentry CA
+// extern int externFundefNoParam (); // ERROR: at insertentry CA
+extern int globdecl;
+
+export int globdef; // does not crash
+// export int globdefWithExpr = 5; // ERROR: Could not be found in symbol table: globdefWithExpr
+
+export int exportedfundef(int n) {
+    int a = 8;
+    float b = 9.2;
+    bool c = true;
+
+    int add = 1 + 1;
+    int sub = 1 - 1;
+    int mul = 1 * 1;
+    int div = 1 / 1;
+    bool lt = 1 < 1;
+    bool le = 1 <= 1;
+    bool gt = 1 > 1;
+    bool ge = 1 >= 1;
+    bool eq = 1 == 1;
+    int ne = 1 != 1;
+    bool and1 = true && true;
+    bool and2 = true && false;
+    // bool or1 = true || true;
+    // bool or2 = true || false;
+
+    // if(int x == 5)
+    //     y = 3;
+
+    // int x = 7;
+    // int y = 2;
+    // if (x == 5)
+    // {
+    //     y = 3;
+    // }
+    // else
+    // {
+    //     y = 5;
+    // }
+
+    exportedfundef(a); //error : could not be found in symbol table
+    return a;
+}

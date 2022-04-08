@@ -3,6 +3,9 @@
         "*.cvc": "c",
         "*.y": "yacc",
         "*.h": "c",
-        "*.mac": "c"
+        "*.mac": "c",
+        "*.tcc": "c",
+        "valarray": "c",
+        "string": "c"
     }
 }

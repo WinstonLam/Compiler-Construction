@@ -97,7 +97,26 @@
         </travuser>
        </traversal>
 
-    
+      <traversal id="GBC" name="Generate byte code" default="sons" include="gen_byte_code.h">
+        <travuser>
+            <node name="Program" />
+            <node name="GlobDef" />
+            <node name="GlobDecl" />
+            <node name="VarDecl" />
+            <node name="FunCall" />
+            <node name="FunDef" />
+            <node name="Return" />
+            <node name="IfElse" />
+            <node name="Assign" />
+            <node name="BinOp" />
+            <node name="MonOp" />
+            <node name="Cast" />
+            <node name="Num"/>
+            <node name="Float"/>
+            <node name="Bool"/>
+            <node name="Var"/>
+        </travuser>
+      </traversal>
     </general>
 
 </phases>
@@ -449,6 +468,7 @@
         </attributes>
         <flags>
             <flag name="IsExport" />
+            <flag name="IsExtern" />
         </flags>
     </node>
     <node name="SymbolEntry">

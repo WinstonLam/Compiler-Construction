@@ -148,11 +148,6 @@ PRTsymbolentry(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTsymbolentry");
 
- 
-
-  TypePrinter(SYMBOLENTRY_TYPE(arg_node));
-
-  printf("%s ", SYMBOLENTRY_NAME(arg_node));
   SYMBOLENTRY_NEXT(arg_node) = TRAVopt(SYMBOLENTRY_NEXT(arg_node), arg_info);
 
   DBUG_RETURN(arg_node);
@@ -199,7 +194,6 @@ PRTglobdef(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTglobdef");
 
-  
   TypePrinter(GLOBDEF_TYPE(arg_node));
   printf("%s", GLOBDEF_NAME(arg_node));
 
@@ -409,7 +403,7 @@ node *
 PRTfundefs(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("PRTfundefs");
- 
+
 
   FUNDEFS_FUNDEF(arg_node) = TRAVdo(FUNDEFS_FUNDEF(arg_node), arg_info);
 
@@ -730,7 +724,7 @@ PRTmonop(node *arg_node, info *arg_info)
   else if (MONOP_OP(arg_node) == MO_unknown)
   {
     DBUG_ASSERT(0, "Detected nknown monop");
-  } 
+  }
 
   MONOP_OPERAND(arg_node) = TRAVdo(MONOP_OPERAND(arg_node), arg_info);
 
