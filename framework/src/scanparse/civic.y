@@ -114,10 +114,12 @@ globdecl: EXTERN type ID SEMICOLON
 fundef: EXPORT type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($2, STRcpy($3), NULL, $8, $5);
+        FUNDEF_ISEXPORT($$) = 1;
       }
       | EXPORT type ID BRACKET_L BRACKET_R BRACES_L funbody BRACES_R
       {
         $$ = TBmakeFundef($2, STRcpy($3), NULL, $7, NULL);
+        FUNDEF_ISEXPORT($$) = 1;
       }
       | type ID BRACKET_L param BRACKET_R BRACES_L funbody BRACES_R
       {
@@ -186,6 +188,7 @@ param: type ID
 globdef: EXPORT type ID LET expr SEMICOLON
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), NULL, $5);
+        GLOBDEF_ISEXPORT($$) = 1;
       }
       | type ID SEMICOLON
       {
@@ -194,6 +197,7 @@ globdef: EXPORT type ID LET expr SEMICOLON
       | EXPORT type ID SEMICOLON
       {
         $$ = TBmakeGlobdef($2, STRcpy($3), NULL, NULL);
+        GLOBDEF_ISEXPORT($$) = 1;
       }
       | type ID LET expr SEMICOLON
       {
