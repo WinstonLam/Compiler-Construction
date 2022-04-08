@@ -1,12 +1,24 @@
 void foo() {
     for (int i = 0, 10) {
-        foo();
-        foo();
+       
     }
-
-    for (int i = 0, 10)
-        foo();
-
-    for (int i = 10, 0, -1)
-        foo();
 }
+
+// void foo() {
+//   int i_2 = 10;
+//   int i_1 = 0;
+//   int i_0 = 0;
+//   while (i_0 < 10) {
+//     foo()
+//     foo()
+//     i_0 = (i_0 + 1);
+//   }
+//   while (i_1 < 10) {
+//     foo()
+//     i_1 = (i_1 + 1);
+//   }
+//   while (i_2 < 0) {
+//     foo()
+//     i_2 = (i_2 + 1);
+//   }
+// }

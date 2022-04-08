@@ -171,6 +171,17 @@ node *SLvardecl(node *arg_node, info *arg_info)
     DBUG_RETURN( arg_node);
 }
 
+node *SLglobdef (node *arg_node, info *arg_info)
+{
+    DBUG_ENTER("SLglobdef");
+
+    // create the link for the globdef node by getting it's symboltable
+    // entry using the GetNode function.
+    GLOBDEF_TABLELINK(arg_node) = GetNode(GLOBDEF_NAME(arg_node), INFO_SYMBOLTABLE( arg_info), arg_node, INFO_PARENTTABLE(arg_info));
+
+    DBUG_RETURN( arg_node);
+}
+
 node *SLvarlet(node *arg_node, info *arg_info)
 {
     DBUG_ENTER("SLvarlet");
@@ -179,6 +190,7 @@ node *SLvarlet(node *arg_node, info *arg_info)
 
     DBUG_RETURN( arg_node);
 }
+
 
 node *SLvar(node *arg_node, info *arg_info)
 {

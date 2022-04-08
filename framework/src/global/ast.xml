@@ -44,6 +44,7 @@
             <node name="Program" />
             <node name="FunDef" />
             <node name="VarDecl"/>
+            <node name="GlobDef"/>
             <node name="VarLet" />
             <node name="Var" />
         </travuser>
@@ -829,6 +830,18 @@
                     <targets>
                         <target mandatory="yes">
                             <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+             <attribute name="TableLink">
+                <type name="Link">
+                    <targets>
+                        <target mandatory="no">
+                            <node name="SymbolEntry"/>
                             <phases>
                                 <all/>
                             </phases>
