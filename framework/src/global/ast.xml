@@ -59,6 +59,8 @@
             <node name="IfElse" />
             <node name="DoWhile"/>
             <node name="While"/>
+            <node name="Var"/>
+            <node name="Cast"/>
             <node name="For" />
             <node name="BinOp" />
             <node name="MonOp"/>
@@ -489,6 +491,18 @@
             </attribute>
             <attribute name="Name">
                 <type name="String">
+                    <targets>
+                        <target mandatory="yes">
+                            <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
+            <attribute name="Offset">
+                <type name="Int">
                     <targets>
                         <target mandatory="yes">
                             <any/>

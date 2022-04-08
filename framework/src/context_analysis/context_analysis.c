@@ -36,6 +36,7 @@ struct INFO {
   char *forname_old;
   char *forname_new;
   int forcounter;
+  int offset;
 };
 
 /*
@@ -48,6 +49,7 @@ struct INFO {
 #define INFO_FORNAME_OLD(n)  ((n)->forname_old)
 #define INFO_FORNAME_NEW(n)  ((n)->forname_new)
 #define INFO_SCOPE(n)  ((n)->scope)
+#define INFO_OFFSET(n)  ((n)->offset)
 
 /*
  * INFO functions
@@ -67,6 +69,7 @@ static info *MakeInfo(void)
   INFO_FORNAME_OLD( tables) = NULL;
   INFO_FORNAME_NEW( tables) = NULL;
   INFO_FORCOUNTER( tables) = 0;
+  INFO_OFFSET( tables) = 0;
 
   DBUG_RETURN( tables);
 }
@@ -130,8 +133,10 @@ node *CAglobdef (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAglobdef");
 
+  // increment offset counter
+  int offset = INFO_OFFSET(arg_info) ++;
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), NULL, NULL);
+  node *new = TBmakeSymbolentry(GLOBDEF_TYPE(arg_node), STRcpy(GLOBDEF_NAME(arg_node)), offset, NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
@@ -169,9 +174,10 @@ node *CAfundef (node *arg_node, info *arg_info)
   // reset the scope to the global scope
   INFO_SYMBOLTABLE(arg_info) = globaltable;
 
-
+  // increment offset counter
+  int offset = INFO_OFFSET(arg_info) ++;
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), NULL, COPYdoCopy(FUNDEF_PARAMS(arg_node)));
+  node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), offset, NULL, COPYdoCopy(FUNDEF_PARAMS(arg_node)));
  
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
@@ -198,8 +204,10 @@ node *CAvardecl(node *arg_node, info *arg_info)
   if VARDECL_INIT(arg_node) {
     TRAVopt(VARDECL_INIT(arg_node),arg_info);
   }
+  // increment offset counter
+  int offset = INFO_OFFSET(arg_info) ++;
    // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), NULL, NULL);
+  node *new = TBmakeSymbolentry(VARDECL_TYPE(arg_node), STRcpy(VARDECL_NAME(arg_node)), offset, NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
 
@@ -212,8 +220,10 @@ node *CAparam(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAparam");
 
+  // increment offset counter
+  int offset = INFO_OFFSET(arg_info) ++;
   // create new node to add to symboltable 
-  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL, NULL);
+  node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), offset, NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
   CTInote("inserted param %s", PARAM_NAME(arg_node));
@@ -227,8 +237,10 @@ node *CAfor(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAfor");
 
+  // increment offset counter
+  int offset = INFO_OFFSET(arg_info) ++;
   // create new node to add to symboltable
-  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), NULL, NULL);
+  node *new = TBmakeSymbolentry(T_int ,STRcpy(FOR_LOOPVAR(arg_node)), offset, NULL, NULL);
 
   // if instance variable is reused in the nested for loop then rename
   node *renamed = RenameCheck(arg_info, COPYdoCopy(new));

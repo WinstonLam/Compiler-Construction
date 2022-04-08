@@ -107,15 +107,19 @@ node *FOfor (node *arg_node, info *arg_info)
   char *name =  FOR_LOOPVAR(arg_node);
 
   node *block = FOR_BLOCK(arg_node);
-  if (NODE_TYPE(block) == N_stmts) {
-    node *temp = block;
-    while(STMTS_NEXT(temp)) {
-      temp = STMTS_NEXT(temp);
-    }
+  if (block) {
+    if (NODE_TYPE(block) == N_stmts) {
+      node *temp = block;
+      while(STMTS_NEXT(temp)) {
+        temp = STMTS_NEXT(temp);
+      }
 
-    STMTS_NEXT(temp) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+      STMTS_NEXT(temp) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    } else {
+      block = TBmakeStmts(block, TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))));
+    }
   } else {
-    block = TBmakeStmts(block,TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))));
+    block = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
   }
 
 

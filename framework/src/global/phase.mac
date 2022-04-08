@@ -46,9 +46,15 @@ SUBPHASE( sl,
           ALWAYS,
           pet)
 
-SUBPHASE( be,
-          "Bool Evaluation",
-          BEdoBoolEvaluation,
+SUBPHASE( fo,
+          "For Optimisation",
+          FOdoForOptimisation,
+          ALWAYS,
+          pet)
+
+SUBPHASE( tc,
+          "Type checker",
+          TCdoTypeChecking,
           ALWAYS,
           pet)
 
@@ -58,16 +64,9 @@ SUBPHASE( bc,
           ALWAYS,
           pet)
 
-SUBPHASE( fo,
-          "For Optimisation",
-          FOdoForOptimisation,
-          ALWAYS,
-          pet)
-
-
-SUBPHASE( tc,
-          "Type checker",
-          TCdoTypeChecking,
+SUBPHASE( be,
+          "Bool Evaluation",
+          BEdoBoolEvaluation,
           ALWAYS,
           pet)
 
