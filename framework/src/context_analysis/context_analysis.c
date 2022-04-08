@@ -33,7 +33,8 @@ struct INFO {
   node *symboltable;
   node *scope;
   char *funname;
-  int paramcounter;
+  char *forname_old;
+  char *forname_new;
   int forcounter;
 };
 
@@ -42,9 +43,10 @@ struct INFO {
  */
 
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
-#define INFO_PARAMCOUNTER(n) ((n)->paramcounter)
 #define INFO_FORCOUNTER(n)  ((n)->forcounter)
 #define INFO_FUNNAME(n)  ((n)->funname)
+#define INFO_FORNAME_OLD(n)  ((n)->forname_old)
+#define INFO_FORNAME_NEW(n)  ((n)->forname_new)
 #define INFO_SCOPE(n)  ((n)->scope)
 
 /*
@@ -62,7 +64,8 @@ static info *MakeInfo(void)
   INFO_SYMBOLTABLE( tables) = NULL;
   INFO_SCOPE( tables) = NULL;
   INFO_FUNNAME( tables) = NULL;
-  INFO_PARAMCOUNTER( tables) = 0;
+  INFO_FORNAME_OLD( tables) = NULL;
+  INFO_FORNAME_NEW( tables) = NULL;
   INFO_FORCOUNTER( tables) = 0;
 
   DBUG_RETURN( tables);
@@ -84,29 +87,12 @@ static info *FreeInfo( info *info)
 // function to rename variables with different types but same name
 node *RenameCheck(info *arg_info, node *entry) {
   DBUG_ENTER("RenameCheck");
-  // if symboltable is empty then no rename is needed
-  if (INFO_SYMBOLTABLE(arg_info) == NULL) {
-    DBUG_RETURN(entry);
-  }
-  // traverse through the symbol table till the end,
-  // if variable is already in the table rename the variable.
-  node *temp = INFO_SYMBOLTABLE(arg_info);
 
-  while (temp) {
-    if (STReq(SYMBOLENTRY_NAME(temp), SYMBOLENTRY_NAME(entry)))
-        {
-        // rename the name of the entry node adjusted with the var_count
-        // create var count string pointer that will be concatenated with multiple
-        // occurances in nested variables.
-        // variables wil be renamed as such: i - > _ 1 i -> _1i
-        SYMBOLENTRY_NAME(entry) = STRcatn(3, SYMBOLENTRY_NAME(entry), "_", STRitoa(INFO_FORCOUNTER(arg_info)));
-        // if variable has been renamed increment the counter
-        INFO_FORCOUNTER(arg_info) += 1;
-        DBUG_RETURN(entry);
-        }
-      temp = SYMBOLENTRY_NEXT(temp);
-    }
+  SYMBOLENTRY_NAME(entry) = STRcatn(3, SYMBOLENTRY_NAME(entry), "_", STRitoa(INFO_FORCOUNTER(arg_info)));
+  // if variable has been renamed increment the counter
+  INFO_FORCOUNTER(arg_info) ++;
   DBUG_RETURN(entry);
+
 }
 
 // function that given an node puts it in the symboltable
@@ -171,8 +157,6 @@ node *CAfundef (node *arg_node, info *arg_info)
   TRAVopt(FUNDEF_PARAMS(arg_node),arg_info);
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FUNDEF_FUNBODY(arg_node),arg_info);
-  // reset paramcounter
-  INFO_PARAMCOUNTER(arg_info) = 0;
 
   // link these lower level scope symboltables to their corresponding node
   node *localtable = INFO_SYMBOLTABLE( arg_info);
@@ -195,6 +179,17 @@ node *CAfundef (node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
   }
 
+node *CAvar(node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("CAvar");
+
+  if (STReq(VAR_NAME(arg_node),INFO_FORNAME_OLD(arg_info))) {
+    // if the variable is a for loop variable then rename it
+    VAR_NAME(arg_node) = STRcpy(INFO_FORNAME_NEW(arg_info));
+  }
+
+  DBUG_RETURN(arg_node);
+}
 
 node *CAvardecl(node *arg_node, info *arg_info)
 {
@@ -237,6 +232,10 @@ node *CAfor(node *arg_node, info *arg_info)
   // if instance variable is reused in the nested for loop then rename
   node *renamed = RenameCheck(arg_info, COPYdoCopy(new));
 
+  CTInote("renamed to: %s", SYMBOLENTRY_NAME(renamed));
+  INFO_FORNAME_OLD(arg_info) = STRcpy(FOR_LOOPVAR(arg_node));
+  INFO_FORNAME_NEW(arg_info) = STRcpy(SYMBOLENTRY_NAME(renamed));
+
   // create new vardecl in the current scope
   if (INFO_SCOPE(arg_info)) {
     INFO_SCOPE(arg_info) =  TBmakeVardecl(STRcpy(SYMBOLENTRY_NAME(renamed)), T_int, NULL, FOR_START(arg_node), INFO_SCOPE(arg_info));
@@ -255,8 +254,6 @@ node *CAfor(node *arg_node, info *arg_info)
   // traverse into the funbody to create lower level scope symboltables for the body
   TRAVopt(FOR_BLOCK(arg_node),arg_info);
 
-  // reset forloop variabel counter to 0
-  INFO_FORCOUNTER(arg_info) = 0;
 
   DBUG_RETURN( arg_node);
 

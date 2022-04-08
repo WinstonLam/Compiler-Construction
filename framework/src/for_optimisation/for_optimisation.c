@@ -104,15 +104,21 @@ node *FOfor (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("FOfor");
 
-  char *name =  STRcatn(3, FOR_LOOPVAR(arg_node), "_", STRitoa(INFO_VAR_COUNT(arg_info))); 
-  INFO_VAR_COUNT(arg_info)++;
+  char *name =  FOR_LOOPVAR(arg_node);
+  CTInote("for loop variable: %s", name);
 
   node *block = FOR_BLOCK(arg_node);
   if (block) {
-    while(STMTS_NEXT(block)) {
-      block = STMTS_NEXT(block);
+    node *curr = NULL;
+    CTInote("THERE IS A BLOCK");
+    CTInote("block type: %d", NODE_TYPE(block));
+    while(block) {
+      curr = block;
+      block = TRAVopt(STMTS_NEXT(block),arg_info);
     }
-    STMTS_NEXT(block) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    CTInote("END OF WHILE");
+    STMTS_NEXT(curr) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    CTInote("appended to block type: %d", NODE_TYPE(curr));
   } else {
     block = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
   }
