@@ -1,16 +1,16 @@
 #ifndef _LINKEDLIST_H_
 #define _LINKEDLIST_H_
 
-// Data structure to store a linked list linkedlist
+// string structure to store a linked list linkedlist
 typedef struct linkedlist
 {
-    char *data;
+    char *string;
     struct linkedlist* next;
 } linkedlist;
 
-extern linkedlist *PushIfExistElseCreate(linkedlist *list, char *data);
-extern linkedlist *New(linkedlist *next, char *data);
-extern linkedlist *Push(linkedlist *head, char *data);
-extern void Free(linkedlist *list);
+extern linkedlist *PushIfExistElseCreate(linkedlist *list, char *string);
+extern linkedlist *New(linkedlist *next, char *string);
+extern linkedlist *Push(linkedlist *head, char *string);
+extern void FreeLinkedlist(linkedlist *list);
 
 #endif

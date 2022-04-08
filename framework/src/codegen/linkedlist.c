@@ -5,29 +5,27 @@
 #include "dbug.h"
 
 
-linkedlist *PushIfExistElseCreate(linkedlist *list, char *data) {
+linkedlist *PushIfExistElseCreate(linkedlist *list, char *string) {
     if(list)
     {
-        return Push(list, data);
+        return Push(list, string);
     } else {
-        return New(list, data);
+        return New(list, string);
     }
 }
 
 // Helper function to return new linked list linkedlist from the heap
-linkedlist *New(linkedlist *next, char *data)
+linkedlist *New(linkedlist *next, char *string)
 {
-    // allocate a new linkedlist in a heap and set its data
+    // allocate a new linkedlist in a heap and set its string
     struct linkedlist* linkedlist = (struct linkedlist*)malloc(sizeof(struct linkedlist));
-    linkedlist->data = data;
+    linkedlist->string = string;
     linkedlist->next = next;
-
-    DBUG_PRINT("GBC", ("%s", linkedlist));
 
     return linkedlist;
 }
 
-linkedlist *Push(linkedlist *head, char *data)
+linkedlist *Push(linkedlist *head, char *string)
 {
     if (head == NULL)
     {
@@ -40,20 +38,21 @@ linkedlist *Push(linkedlist *head, char *data)
         current = current->next;
     }
 
-    linkedlist *newList = New(NULL, data);
+    linkedlist *newList = New(NULL, string);
     current->next = newList;
 
     return head;
 }
 
-void Free(linkedlist *list)
+void FreeLinkedlist(linkedlist *list)
 {
+    // DBUG_PRINT("GBC", ("%s", linkedlist));
     linkedlist *updated;
 
     while(list != NULL)
     {
         updated = list->next;
-        free(list->data);
+        free(list->string);
         free(list);
 
         list = updated;

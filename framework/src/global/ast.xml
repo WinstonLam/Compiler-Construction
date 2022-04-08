@@ -107,6 +107,7 @@
             <node name="FunDef" />
             <node name="Return" />
             <node name="IfElse" />
+            <node name="While" />
             <node name="Assign" />
             <node name="BinOp" />
             <node name="MonOp" />

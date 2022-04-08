@@ -87,37 +87,19 @@ node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
 
         DBUG_PRINT("GetNode",("variable: %s not found in current symboltable",entry));
         if(!parenttable) {
-  
+
             CTIerrorLine(NODE_LINE(arg_node),"Use of undeclared variable %s", entry);
         }
         else {
-       
+
             DBUG_PRINT("GetNode",("searching: %s in parenttable",entry));
             temp =  GetNode(entry, parenttable, arg_node, NULL);
 
         }
-        
+
     }
     DBUG_RETURN(temp);
-    
-}
 
-size_t CountVarDecls(node *table)
-{
-    node *entry = table;
-
-    size_t count = 0;
-    for (; entry; entry = SYMBOLENTRY_NEXT(table))
-    {
-        // TODO: CHECK IF ITS NOT A PARAM, THEN ENTER DONT COUNT IT
-        // if (SYMBOLENTRY_PARAM(entry))
-        // {
-        //     continue;
-        // }
-        count ++;
-    }
-
-    return count;
 }
 
 /*

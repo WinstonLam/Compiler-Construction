@@ -5,6 +5,7 @@
 #include "dbug.h"
 #include "str.h"
 #include "memory.h"
+#include "copy.h"
 #include "ctinfo.h"
 #include "globals.h"
 #include "linkedlist.h"
@@ -42,6 +43,7 @@ static info *MakeInfo(void)
   DBUG_ENTER("MakeInfo");
 
   tables = (info *)MEMmalloc(sizeof(info));
+  INFO_FILE(tables) = NULL;
 
   INFO_SYMBOLTABLE(tables) = NULL;
   INFO_CURRENTTYPE(tables) = T_unknown;
@@ -63,59 +65,43 @@ static info *FreeInfo( info *info)
 
   info = MEMfree(info);
 
-  // TODO: Clean others
+  // FreeLinkedlist(INFO_GLOBAL(info));
+  // FreeLinkedlist(INFO_CONSTANT(info));
+  // FreeLinkedlist(INFO_IMPORT(info));
+  // FreeLinkedlist(INFO_EXPORT(info));
 
   DBUG_RETURN(info);
 }
-
-
-// this function will return a given node in a symboltable
-// static node *GetNode(char *name, info *arg_info)
-// {
-//     // traverse through the symbol table untill node is found
-//     node *temp = INFO_SYMBOLTABLE(arg_info);
-//     while (temp) {
-//         if (STReq(SYMBOLENTRY_NAME(temp), name)) {
-//             return temp;
-//         }
-//         temp = SYMBOLENTRY_NEXT(temp);
-//     }
-
-//     CTIerror("Could not be found in symbol table: %s", name);
-//     return temp;
-// }
-
 
 static void printGlobals(info *arg_info)
 {
   FILE *file = INFO_FILE(arg_info);
 
-
   linkedlist *global = INFO_GLOBAL(arg_info);
   while(global)
   {
-    fprintf(file, ".global %s\n", global->data);
+    fprintf(file, ".global %s\n", global->string);
     global = global->next;
   }
 
   linkedlist *constant = INFO_CONSTANT(arg_info);
   while(constant)
   {
-    fprintf(file, ".const %s\n", constant->data);
+    fprintf(file, ".const %s\n", constant->string);
     constant = constant->next;
   }
 
   linkedlist *import = INFO_IMPORT(arg_info);
   while(import)
   {
-    fprintf(file, ".import%s\n", import->data);
+    fprintf(file, ".import%s\n", import->string);
     import = import->next;
   }
 
   linkedlist *export = INFO_EXPORT(arg_info);
   while(export)
   {
-    fprintf(file, ".export%s\n", export->data);
+    fprintf(file, ".export%s\n", export->string);
     export = export->next;
   }
 }
@@ -154,13 +140,15 @@ node *GBCglobdef(node *arg_node, info *arg_info)
   DBUG_ENTER("GBCglobdef");
 
   if(GLOBDEF_ISEXPORT(arg_node)) {
-    //TODO: FIX INDEX
+    //TODO: FIX OFFSET WITH INDEX FROM SYMBOL TABLE
     int index = 0;
     char *string = STRcatn(4, "var \"", GLOBDEF_NAME(arg_node), "\" ", index);
 
     // Add to export list
     INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
   }
+
+  INFO_GLOBAL(arg_info) = PushIfExistElseCreate(INFO_GLOBAL(arg_info), TypePrinter(GLOBDEF_TYPE(arg_node)));
 
   GLOBDEF_DIMS(arg_node) = TRAVopt(GLOBDEF_DIMS(arg_node),arg_info);
   GLOBDEF_INIT(arg_node) = TRAVopt(GLOBDEF_INIT(arg_node), arg_info);
@@ -174,7 +162,8 @@ node *GBCglobdecl(node *arg_node, info *arg_info)
   DBUG_ENTER("GBCglobdecl");
 
   // Add to import list
-  INFO_GLOBAL(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), TypePrinter(GLOBDECL_TYPE(arg_node)));
+  // All global declarations are imported, so there is never need for a global one
+  INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), TypePrinter(GLOBDECL_TYPE(arg_node)));
 
   GLOBDECL_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
 
@@ -188,6 +177,7 @@ node *GBCvardecl(node *arg_node, info *arg_info)
   if (VARDECL_INIT(arg_node) != NULL) {
     VARDECL_INIT(arg_node) = TRAVopt(VARDECL_INIT(arg_node), arg_info);
     const type currenttype = INFO_CURRENTTYPE(arg_info);
+
     // TODO: GET INDEX FROM SYMBOL TABLE TO STORE VAL IN CORRECT INDEX
     int index = 0;
 
@@ -227,7 +217,7 @@ node *GBCfuncall(node *arg_node, info *arg_info)
 
 
   // node *symboltableEntry =
-  // TODO: AFTER TRAVERSAL DO jsr OR jsre DEPENDING ON IF IT HAS A FUNDEC WHICH MEANS ITLL BE EXTERN
+  // TODO: AFTER TRAVERSAL DO jsr OR jsre DEPENDING ON IF IT HAS AN EXTERN FUNDEC
 
   DBUG_RETURN(arg_node);
 }
@@ -255,29 +245,30 @@ node *GBCfundef(node *arg_node, info *arg_info)
     // PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
   // }
 
-  // TODO: NIET NODIG?? EXTERN AL IN FUNDECL EN GLOBDECL
   if(FUNDEF_ISEXTERN(arg_node))
   {
-    int length = snprintf(NULL, 0, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), typeToString(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
+    // Shamelessly stolen from https://stackoverflow.com/a/29087251/12106583
+    int length = snprintf(NULL, 0, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
     int lengthPlus = length + 1;
     char *string = (char *)malloc(lengthPlus);
 
-    snprintf(string, lengthPlus, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), typeToString(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
-
-    char *string = STRcatn(8, "fun \"", FUNDEF_NAME(arg_node), "\" ", TypePrinter(FUNDEF_TYPE(arg_node)), " ", params, " ", FUNDEF_NAME(arg_node));
-    PushIfExistElseCreate(INFO_IMPORT(arg_info), string);
-  } else
+    snprintf(string, lengthPlus, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
+    PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(string));
+    // free(string);
+  }
+  else
   {
     fprintf(INFO_FILE(arg_info), "%s:\n", FUNDEF_NAME(arg_node));
-
-
   }
+
 
   FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
 
   FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
 
   fprintf(INFO_FILE(arg_info), "\n");
+
+  // free(params);
 
   DBUG_RETURN(arg_node);
 }
@@ -291,7 +282,7 @@ node *GBCreturn(node *arg_node, info *arg_info)
 
   const char *returntype;
 
-  type symboltype = T_int; // TODO: GET ACTUAL RETURN TYPE
+  type symboltype = T_int; // TODO: GET ACTUAL RETURN TYPE FROM SYMBOL TABLE
 
   switch (symboltype)
   {
@@ -379,7 +370,22 @@ node *GBCwhile(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("GBCwhile");
 
-  //TODO:
+  char *whileBranch = generateBranch("while", arg_info);
+  char *endBranch = generateBranch("end", arg_info);
+
+  fprintf(INFO_FILE(arg_info), "\n%s:\n", whileBranch);
+
+  TRAVdo(WHILE_COND(arg_node), arg_info);
+
+  fprintf(INFO_FILE(arg_info), "  branch_f %s\n", endBranch);
+
+  TRAVopt(WHILE_BLOCK(arg_node), arg_info);
+
+  fprintf(INFO_FILE(arg_info), "  jump %s\n", whileBranch);
+  fprintf(INFO_FILE(arg_info), "%s:\n\n", endBranch);
+
+  free(whileBranch);
+  free(endBranch);
 
   DBUG_RETURN(arg_node);
 }
@@ -390,7 +396,7 @@ node *GBCvar(node *arg_node, info *arg_info)
     DBUG_ENTER("GBCvar");
 
     // TODO: GET TYPE FROM SYMBOL TABLE
-    // TODO: FIX INDEX MISSCHIEN DOOR
+    // TODO: FIX INDEX DMV OFFSET IN SYMBOLTABLE
     type symbolentrytype = T_int;
     int index = 0;
 
@@ -412,53 +418,6 @@ node *GBCvar(node *arg_node, info *arg_info)
       break;
     }
 
-    // node *decl = VAR_DECL(arg_node);
-    // node *symboltableEntry = STfindByNode(INFO_SYMBOL_TABLE(arg_info), decl);
-
-    // INFO_TYPE(arg_info) = SYMBOLTABLEENTRY_TYPE(symboltableEntry);
-
-    // if (NODE_TYPE(decl) == N_globdef)
-    // {
-    //     char scope = GLOBDEF_ISEXTERN(decl) ? 'e' : 'g';
-
-    //     if (GLOBDEF_TYPE(decl) == T_int)
-    //     {
-    //         fprintf(INFO_FILE(arg_info), "  iload%c %d\n", scope, SYMBOLTABLEENTRY_OFFSET(symboltableEntry));
-    //     }
-    //     else if (GLOBDEF_TYPE(decl) == T_float)
-    //     {
-    //         fprintf(INFO_FILE(arg_info), "  fload%c %d\n", scope, SYMBOLTABLEENTRY_OFFSET(symboltableEntry));
-    //     }
-    // }
-    // else
-    // {
-    //     switch (SYMBOLTABLEENTRY_TYPE(symboltableEntry))
-    //     {
-    //     case T_int:
-    //         fprintf(
-    //             INFO_FILE(arg_info),
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry) < 4 ? "   iload_%d\n" : "    iload %d\n",
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry));
-    //         break;
-    //     case T_float:
-    //         fprintf(
-    //             INFO_FILE(arg_info),
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry) < 4 ? "   fload_%d\n" : "    fload %d\n",
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry));
-    //         break;
-    //     case T_bool:
-    //         fprintf(
-    //             INFO_FILE(arg_info),
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry) < 4 ? "   bload_%d\n" : "    bload %d\n",
-    //             SYMBOLTABLEENTRY_OFFSET(symboltableEntry));
-    //         break;
-    //     case T_void:
-    //         break;
-    //     case T_unknown:
-    //         break;
-    //     }
-    // }
-
     DBUG_RETURN(arg_node);
 }
 
@@ -472,7 +431,7 @@ node *GBCassign(node *arg_node, info *arg_info)
   // TODO: GET NODE OF LET
   node *symboltableentry = NULL;
   type nodetype = SYMBOLENTRY_TYPE(symboltableentry);
-  int index = 0; // TODO: FIX OFFSET
+  int index = 0; // TODO: FIX OFFSET DMV SYMBOLTABLE OFFSET
 
 
   switch (nodetype)
@@ -739,6 +698,8 @@ node *GBCdoGenByteCode( node *syntaxtree)
   DBUG_ASSERT((syntaxtree != NULL), "GBCdoGenByteCode called with empty syntaxtree");
 
   info *arg_info = MakeInfo();
+  INFO_FILE(arg_info) = stdout;
+  DBUG_PRINT("GBC", ("%s", global.outfile));
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)

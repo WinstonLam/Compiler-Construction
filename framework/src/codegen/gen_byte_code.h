@@ -11,6 +11,7 @@ extern node *GBCfuncall(node *arg_node, info *arg_info);
 extern node *GBCfundef(node *arg_node, info *arg_info);
 extern node *GBCreturn(node *arg_node, info *arg_info);
 extern node *GBCifelse(node *arg_node, info *arg_info);
+extern node *GBCwhile(node *arg_node, info *arg_info);
 extern node *GBCassign(node *arg_node, info *arg_info);
 extern node *GBCbinop(node *arg_node, info *arg_info);
 extern node *GBCmonop(node *arg_node, info *arg_info);

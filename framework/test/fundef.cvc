@@ -39,6 +39,11 @@ export int exportedfundef(int n) {
     //     y = 5;
     // }
 
+    // while (x < 5)
+    // {
+    //     y = 5;
+    // }
+
     exportedfundef(a); //error : could not be found in symbol table
     return a;
 }
