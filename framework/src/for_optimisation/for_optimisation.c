@@ -105,22 +105,17 @@ node *FOfor (node *arg_node, info *arg_info)
   DBUG_ENTER("FOfor");
 
   char *name =  FOR_LOOPVAR(arg_node);
-  CTInote("for loop variable: %s", name);
 
   node *block = FOR_BLOCK(arg_node);
-  if (block) {
-    node *curr = NULL;
-    CTInote("THERE IS A BLOCK");
-    CTInote("block type: %d", NODE_TYPE(block));
-    while(block) {
-      curr = block;
-      block = TRAVopt(STMTS_NEXT(block),arg_info);
+  if (NODE_TYPE(block) == N_stmts) {
+    node *temp = block;
+    while(STMTS_NEXT(temp)) {
+      temp = STMTS_NEXT(temp);
     }
-    CTInote("END OF WHILE");
-    STMTS_NEXT(curr) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
-    CTInote("appended to block type: %d", NODE_TYPE(curr));
+
+    STMTS_NEXT(temp) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
   } else {
-    block = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    block = TBmakeStmts(block,TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))));
   }
 
 

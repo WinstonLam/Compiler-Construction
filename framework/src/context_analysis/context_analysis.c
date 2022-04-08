@@ -212,10 +212,11 @@ node *CAparam(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAparam");
 
-  // create new node to add to symboltable
+  // create new node to add to symboltable 
   node *new = TBmakeSymbolentry(PARAM_TYPE(arg_node), STRcpy(PARAM_NAME(arg_node)), NULL, NULL);
   // use the InsertEntry function to insert the new node into the symboltable
   InsertEntry(arg_info, new, arg_node);
+  CTInote("inserted param %s", PARAM_NAME(arg_node));
 
   // search for next param if there.
   TRAVopt(PARAM_NEXT(arg_node), arg_info);
