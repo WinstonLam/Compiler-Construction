@@ -110,6 +110,7 @@
             <node name="Return" />
             <node name="IfElse" />
             <node name="While" />
+            <node name="DoWhile" />
             <node name="Assign" />
             <node name="BinOp" />
             <node name="MonOp" />

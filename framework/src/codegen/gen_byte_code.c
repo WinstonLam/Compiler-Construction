@@ -13,6 +13,8 @@
 
 struct INFO {
   node *symboltable;
+  node *parenttable;
+
   type currenttype;
   FILE *file;
 
@@ -26,6 +28,8 @@ struct INFO {
 };
 
 #define INFO_SYMBOLTABLE(n) ((n)->symboltable)
+#define INFO_PARTENTTABLE(n) ((n)->parenttable)
+
 #define INFO_CURRENTTYPE(n) ((n)->currenttype)
 #define INFO_FILE(n) ((n)->file)
 #define INFO_CONSTANT(n) ((n)->constant)
@@ -46,6 +50,8 @@ static info *MakeInfo(void)
   INFO_FILE(tables) = NULL;
 
   INFO_SYMBOLTABLE(tables) = NULL;
+  INFO_PARTENTTABLE(tables) = NULL;
+
   INFO_CURRENTTYPE(tables) = T_unknown;
   INFO_CONSTANTCOUNT(tables) = 0;
   INFO_BRANCHCOUNT(tables) = 0;
@@ -229,6 +235,10 @@ node *GBCfundef(node *arg_node, info *arg_info)
 
   // node *paramnode = PARAM_TABLELINK(FUNDEF_PARAMS(arg_node));
 
+  node *globaltable = INFO_SYMBOLTABLE(arg_info);
+  INFO_PARTENTTABLE(arg_info) = globaltable;
+  INFO_SYMBOLTABLE(arg_info) = FUNDEF_SYMBOLENTRY(arg_node);
+
   char *params = " TEST TEST ";
   // // TODO: FOR EACH PARAM (IF THEY EXIST) ADD IT TO PARAM STRING, ELSE MAKE IT " ". RETRIEVE PARAMS FROM SYMBOL TABLE
   // params = STRcatn(3, params, " ", TypePrinter(SYMBOLENTRY_TYPE(paramnode)));
@@ -236,29 +246,39 @@ node *GBCfundef(node *arg_node, info *arg_info)
   // int amountOfVarDecls = CountVarDecls(FUNDEF_TABLELINK(arg_node));
   // fprintf(INFO_FILE(arg_info), "  esr %d\n", amountOfVarDecls);
 
-  // if(FUNDEF_ISEXPORT(arg_node))
-  // {
 
-    // char *string = STRcatn(8, "fun \"", FUNDEF_NAME(arg_node), "\" ", TypePrinter(FUNDEF_TYPE(arg_node)), " ", params, " ", FUNDEF_NAME(arg_node));
-
-    // // Add to export list
-    // PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
-  // }
-
+  // If fundef is extern, get the params and add it to
+  // .importfun "foo" int bool float
+  // Where the first int is the type and the others are the params
   if(FUNDEF_ISEXTERN(arg_node))
   {
     // Shamelessly stolen from https://stackoverflow.com/a/29087251/12106583
-    int length = snprintf(NULL, 0, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
-    int lengthPlus = length + 1;
-    char *string = (char *)malloc(lengthPlus);
+    int size = snprintf(NULL, 0, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
+    char *buf = malloc(size + 1);
 
-    snprintf(string, lengthPlus, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
-    PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(string));
-    // free(string);
+    snprintf(buf, size + 1, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
+    INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(buf));
   }
   else
   {
+    // print the fundef as
+    // "foo:"
     fprintf(INFO_FILE(arg_info), "%s:\n", FUNDEF_NAME(arg_node));
+
+    // if the fundef is exported, print it as
+    // .exportfun "foo" void int int[] foo
+    if (FUNDEF_ISEXPORT(arg_node))
+    {
+        int size = snprintf(NULL, 0, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
+        char *buf = malloc(size + 1);
+
+        snprintf(buf, size + 1, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params, FUNDEF_NAME(arg_node));
+        INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), STRcpy(buf));
+    }
+
+    // Print esr as
+    // esr L
+
   }
 
 
@@ -270,6 +290,8 @@ node *GBCfundef(node *arg_node, info *arg_info)
 
   // free(params);
 
+  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  INFO_PARTENTTABLE(arg_info) = NULL;
   DBUG_RETURN(arg_node);
 }
 
@@ -368,26 +390,43 @@ node *GBCifelse(node *arg_node, info *arg_info)
 
 node *GBCwhile(node *arg_node, info *arg_info)
 {
-  DBUG_ENTER("GBCwhile");
+    DBUG_ENTER("GBCwhile");
 
-  char *whileBranch = generateBranch("while", arg_info);
-  char *endBranch = generateBranch("end", arg_info);
+    char *whileBranch = generateBranch("while", arg_info);
+    char *endBranch = generateBranch("end", arg_info);
 
-  fprintf(INFO_FILE(arg_info), "\n%s:\n", whileBranch);
+    fprintf(INFO_FILE(arg_info), "\n%s:\n", whileBranch);
 
-  TRAVdo(WHILE_COND(arg_node), arg_info);
+    TRAVdo(WHILE_COND(arg_node), arg_info);
 
-  fprintf(INFO_FILE(arg_info), "  branch_f %s\n", endBranch);
+    fprintf(INFO_FILE(arg_info), "  branch_f %s\n", endBranch);
 
-  TRAVopt(WHILE_BLOCK(arg_node), arg_info);
+    TRAVopt(WHILE_BLOCK(arg_node), arg_info);
 
-  fprintf(INFO_FILE(arg_info), "  jump %s\n", whileBranch);
-  fprintf(INFO_FILE(arg_info), "%s:\n\n", endBranch);
+    fprintf(INFO_FILE(arg_info), "  jump %s\n", whileBranch);
+    fprintf(INFO_FILE(arg_info), "%s:\n\n", endBranch);
 
-  free(whileBranch);
-  free(endBranch);
+    free(whileBranch);
+    free(endBranch);
 
-  DBUG_RETURN(arg_node);
+    DBUG_RETURN(arg_node);
+}
+
+node *GBCdowhile(node *arg_node, info *arg_info)
+{
+    DBUG_ENTER("GBCdowhile");
+
+    char *branchName = generateBranch("dowhile", arg_info);
+    fprintf(INFO_FILE(arg_info), "\n%s:\n", branchName);
+
+    TRAVopt(DOWHILE_BLOCK(arg_node), arg_info);
+    TRAVdo(DOWHILE_COND(arg_node), arg_info);
+
+    fprintf(INFO_FILE(arg_info), "  branch_t %s\n", branchName);
+
+    free(branchName);
+
+    DBUG_RETURN(arg_node);
 }
 
 
