@@ -8,6 +8,7 @@ extern node *SLvardecl(node *arg_node, info *arg_info);
 extern node *SLvar(node *arg_node, info *arg_info);
 extern node *SLvarlet(node *arg_node, info *arg_info);
 extern node *SLprogram(node *arg_node, info *arg_info);
+extern int GetParamcount(node *arg_node);
 extern node *SLdoSymboltableLinker( node *syntaxtree);
 
 #endif

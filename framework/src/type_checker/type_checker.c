@@ -123,7 +123,7 @@ node *TCprogram(node *arg_node, info *arg_info)
 node *TCfundef(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCfundef");
-
+  CTInote("param count %d" ,GetParamcount(arg_node));
   // store the global scope symboltable in place to first traverse into the funbody.
   node *globaltable = INFO_SYMBOLTABLE( arg_info);
 
@@ -232,9 +232,9 @@ node *TCifelse(node *arg_node, info *arg_info)
   IFELSE_COND(arg_node) = TRAVdo(IFELSE_COND(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
 
-  // if(currenttype != T_bool) {
-  //   CTIerror( "Type %s does not match required type %s", TypePrinter(currenttype), TypePrinter(T_bool));
-  // }
+  if(currenttype != T_bool) {
+    CTIerror( "Type %s does not match required type %s", TypePrinter(currenttype), TypePrinter(T_bool));
+  }
 
   // Traverse down then
   IFELSE_THEN(arg_node) = TRAVopt(IFELSE_THEN(arg_node),arg_info);
@@ -262,10 +262,10 @@ node *TCdowhile(node *arg_node, info *arg_info)
   DOWHILE_COND(arg_node) = TRAVdo(DOWHILE_COND(arg_node), arg_info);
   type currenttype = INFO_CURRENTTYPE(arg_info);
 
-  // // Check node type of boolean
-  // if(currenttype != T_bool) {
-  //     CTIerror( "Type %s does not match required type %s", TypePrinter(currenttype), TypePrinter(T_bool));
-  // }
+  // Check node type of boolean
+  if(currenttype != T_bool) {
+      CTIerror( "Type %s does not match required type %s", TypePrinter(currenttype), TypePrinter(T_bool));
+  }
 
    // Traverse down block
    DOWHILE_BLOCK(arg_node) = TRAVopt(DOWHILE_BLOCK(arg_node),arg_info);
