@@ -25,7 +25,16 @@ export int main()
     }
     printNewlines(1);
 
- 
+    m=5;
+    for(int i=10,m,-1)
+    {
+            a=a-1;
+            printInt(a);
+            printSpaces(3);
+
+    }
+    printNewlines(1);
+
 
     return 0;
 }

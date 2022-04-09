@@ -449,23 +449,16 @@ node *GBCvar(node *arg_node, info *arg_info)
 
     DBUG_PRINT("GBC", ("%s", NODE_TYPE(arg_node)));
     bool global = FALSE;
-    // search in local table
-    // if (INFO_PARENTTABLE(arg_info)) {
-    //   if (IsLocal(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info))) {
-    //     CTInote("local");
-    //     global = FALSE;
-    //   } else if (IsLocal(VAR_NAME(arg_node), INFO_PARENTTABLE(arg_info))) {
-    //     CTInote("global");
-    //     global = TRUE;
-    //   } else {
-    //     CTInote("else");
-    //   }
-    // }
+
+    if(VAR_ISGLOBAL(arg_node) == 1)
+    {
+        global = TRUE;
+    }
+  
     type symbolentrytype = SYMBOLENTRY_TYPE(symbolentry);
     int index = SYMBOLENTRY_OFFSET(symbolentry);
     int depth = SYMBOLENTRY_DEPTH(symbolentry);
-
-
+    // NODE_TYPE(VAR_DECL(arg_node)); 
     if(global)
     {
       char *globalchar = depth == 0 ? "e" : "g";

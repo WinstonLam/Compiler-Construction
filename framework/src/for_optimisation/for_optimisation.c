@@ -103,6 +103,12 @@ node *FOfundef (node *arg_node, info *arg_info)
 node *FOfor (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("FOfor");
+  binop op = BO_add;
+  if (FOR_STEP(arg_node)) {
+    if (FOR_STEP(arg_node) < 0) {
+      op = BO_sub;
+    }
+  }
 
   char *name =  FOR_LOOPVAR(arg_node);
 
@@ -114,12 +120,12 @@ node *FOfor (node *arg_node, info *arg_info)
         temp = STMTS_NEXT(temp);
       }
 
-      STMTS_NEXT(temp) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+      STMTS_NEXT(temp) = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(op, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
     } else {
-      block = TBmakeStmts(block, TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))));
+      block = TBmakeStmts(block, TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(op, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))));
     }
   } else {
-    block = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(BO_add, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
+    block = TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(name), NULL, NULL), TBmakeBinop(op, TBmakeVar(STRcpy(name), NULL, NULL), TBmakeNum(1))), NULL);
   }
 
 

@@ -1261,6 +1261,9 @@
                 </type>
             </attribute>
         </attributes>
+        <flags>
+            <flag name="IsGlobal" />
+        </flags>
     </node>
     <node name="Num">
         <sons/>

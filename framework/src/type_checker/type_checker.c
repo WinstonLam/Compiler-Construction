@@ -173,11 +173,12 @@ node *TCfuncall(node *arg_node, info *arg_info)
   // get the first param
   node *temp = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
 
+
   node *param = SYMBOLENTRY_PARAMS(GetNode(FUNCALL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
 
   // check for each param if the given type corresponds
   while (temp) {
-
+  
     if(!param) {
       CTIerror("called function %s with too many arguments", FUNCALL_NAME(arg_node));
     }
@@ -186,7 +187,7 @@ node *TCfuncall(node *arg_node, info *arg_info)
     TRAVdo(EXPRS_EXPR(temp), arg_info);
     type temptype = INFO_CURRENTTYPE(arg_info);
     type paramtype = PARAM_TYPE(param);
-
+   
     // check if the type of the param is the same as the type of the expression
     if (temptype != T_unknown) {
       if (temptype != paramtype) {
@@ -198,6 +199,7 @@ node *TCfuncall(node *arg_node, info *arg_info)
   }
 
   INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(GetNode(STRcpy(FUNCALL_NAME(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node,INFO_PARENTTABLE(arg_info)));
+
   DBUG_RETURN(arg_node);
 }
 
@@ -387,9 +389,11 @@ node *TCvar(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("TCvar");
   DBUG_PRINT("TC", ("var %s", VAR_NAME(arg_node)));
-  CTInote("looking at var %s", VAR_NAME(arg_node));
+  CTInote("checking var %s", VAR_NAME(arg_node));
   node *node = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info),arg_node,INFO_PARENTTABLE(arg_info));
 
+  CTInote("var type %s", TypePrinter(SYMBOLENTRY_TYPE(node)));
+  
   INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(node);
   DBUG_RETURN(arg_node);
 }
