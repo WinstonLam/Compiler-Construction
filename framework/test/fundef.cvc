@@ -10,18 +10,18 @@ export int exportedfundef(int n) {
     float b = 9.2;
     bool c = true;
 
-    int add = 1 + 1;
-    int sub = 1 - 1;
-    int mul = 1 * 1;
-    int div = 1 / 1;
-    bool lt = 1 < 1;
-    bool le = 1 <= 1;
-    bool gt = 1 > 1;
-    bool ge = 1 >= 1;
-    bool eq = 1 == 1;
-    int ne = 1 != 1;
-    bool and1 = true && true;
-    bool and2 = true && false;
+    // int add = 1 + 1;
+    // int sub = 1 - 1;
+    // int mul = 1 * 1;
+    // int div = 1 / 1;
+    // bool lt = 1 < 1;
+    // bool le = 1 <= 1;
+    // bool gt = 1 > 1;
+    // bool ge = 1 >= 1;
+    // bool eq = 1 == 1;
+    // int ne = 1 != 1;
+    // bool and1 = true && true;
+    // bool and2 = true && false;
     // bool or1 = true || true;
     // bool or2 = true || false;
 
@@ -44,6 +44,11 @@ export int exportedfundef(int n) {
     //     y = 5;
     // }
 
-    exportedfundef(a); //error : could not be found in symbol table
+    // exportedfundef(a); //error : could not be found in symbol table
     return a;
+}
+
+export int anotherdef(bool b)
+{
+    return 0;
 }

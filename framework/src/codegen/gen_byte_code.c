@@ -225,6 +225,8 @@ node *GBCfuncall(node *arg_node, info *arg_info)
   // node *symboltableEntry =
   // TODO: AFTER TRAVERSAL DO jsr OR jsre DEPENDING ON IF IT HAS AN EXTERN FUNDEC
 
+  // FUNCALL_
+
   DBUG_RETURN(arg_node);
 }
 
@@ -242,9 +244,6 @@ node *GBCfundef(node *arg_node, info *arg_info)
   char *params = " TEST TEST ";
   // // TODO: FOR EACH PARAM (IF THEY EXIST) ADD IT TO PARAM STRING, ELSE MAKE IT " ". RETRIEVE PARAMS FROM SYMBOL TABLE
   // params = STRcatn(3, params, " ", TypePrinter(SYMBOLENTRY_TYPE(paramnode)));
-
-  // int amountOfVarDecls = CountVarDecls(FUNDEF_TABLELINK(arg_node));
-  // fprintf(INFO_FILE(arg_info), "  esr %d\n", amountOfVarDecls);
 
 
   // If fundef is extern, get the params and add it to
@@ -278,17 +277,16 @@ node *GBCfundef(node *arg_node, info *arg_info)
 
     // Print esr as
     // esr L
+    // Where L is the amount of vardecls
+    // int amountOfVarDecls = CountVarDecls(FUNDEF_TABLELINK(arg_node));
+    int amountOfVarDecls = 0;
+    fprintf(INFO_FILE(arg_info), "    esr %d\n", amountOfVarDecls);
 
+    FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
+    FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
   }
 
-
-  FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
-
-  FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
-
   fprintf(INFO_FILE(arg_info), "\n");
-
-  // free(params);
 
   INFO_SYMBOLTABLE(arg_info) = globaltable;
   INFO_PARTENTTABLE(arg_info) = NULL;
@@ -476,15 +474,15 @@ node *GBCassign(node *arg_node, info *arg_info)
   switch (nodetype)
   {
     case T_int:
-      fprintf(INFO_FILE(arg_info), "  istore %d\n", index);
+      fprintf(INFO_FILE(arg_info), "    istore %d\n", index);
       break;
 
     case T_float:
-      fprintf(INFO_FILE(arg_info), "  fstore %d\n", index);
+      fprintf(INFO_FILE(arg_info), "    fstore %d\n", index);
       break;
 
     case T_bool:
-      fprintf(INFO_FILE(arg_info), "  bstore %d\n", index);
+      fprintf(INFO_FILE(arg_info), "    bstore %d\n", index);
       break;
 
     default:
@@ -580,6 +578,10 @@ node *GBCbinop(node *arg_node, info *arg_info)
       typestring = "b";
       break;
 
+    case T_unknown:
+      //TODO:
+      break;
+
     default:
       break;
   }
@@ -631,6 +633,10 @@ node *GBCmonop(node *arg_node, info *arg_info)
 
     case T_bool:
       typestring = "b";
+      break;
+
+    case T_unknown:
+      //TODO:
       break;
 
     default:
