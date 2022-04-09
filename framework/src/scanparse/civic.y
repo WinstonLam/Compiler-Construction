@@ -48,17 +48,13 @@ static int yyerror( char *errname);
 %type <node> globdef
 %type <node> constant exprs expr
 %type <node> intval boolval floatval
-%type <node> stmts stmt
-%type <node> block
+%type <node> stmts stmt 
+%type <node> block binop monop
 %type <node> assign varlet for dowhile while return ifelse funcall exprstmt
 
-//assign varlet
-// %type <cbinop> binop
-// %type <cmonop> monop
 
-%precedence CAST
-%precedence THEN
-/* %precedence ELSE */
+
+
 
 %left OR AND
 %right EQ
@@ -66,7 +62,11 @@ static int yyerror( char *errname);
 %left LE LT GE GT
 %left MINUS PLUS
 %left STAR SLASH PERCENT
-%right UMINUS FACTORIAL
+%right UMINUS 
+%right FACTORIAL
+%right THEN
+%right CAST
+
 
 %nonassoc ID
 %nonassoc ELSE
@@ -221,7 +221,33 @@ expr: constant
       {
         $$ = $1;
       }
-      | expr PLUS expr
+      | BRACKET_L expr BRACKET_R
+      {
+        $$ = $2;
+      }
+      | binop
+      {
+        $$ = $1;
+      }
+      | monop
+      {
+        $$ = $1;
+      }
+      | BRACKET_L type BRACKET_R expr %prec CAST
+      {
+        $$ = TBmakeCast($2, $4);
+      }
+      | funcall
+      {
+        $$ = $1;
+      }
+      | ID
+      {
+        $$ = TBmakeVar(STRcpy($1), NULL, NULL);
+      }
+      ;
+
+binop: expr PLUS expr
       {
         $$ = TBmakeBinop( BO_add, $1, $3);
       }
@@ -273,25 +299,15 @@ expr: constant
       {
         $$ = TBmakeBinop( BO_and, $1, $3);
       }
-      | FACTORIAL expr
+      ;
+
+monop: FACTORIAL expr
       {
         $$ = TBmakeMonop( MO_not, $2);
       }
       | MINUS expr %prec UMINUS
       {
         $$ = TBmakeMonop( MO_neg, $2);
-      }
-      | BRACKET_L type BRACKET_R expr %prec CAST
-      {
-        $$ = TBmakeCast($2, $4);
-      }
-      | funcall
-      {
-        $$ = $1;
-      }
-      | ID
-      {
-        $$ = TBmakeVar(STRcpy($1), NULL, NULL);
       }
       ;
 
