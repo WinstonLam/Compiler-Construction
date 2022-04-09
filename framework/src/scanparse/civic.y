@@ -48,7 +48,7 @@ static int yyerror( char *errname);
 %type <node> globdef
 %type <node> constant exprs expr
 %type <node> intval boolval floatval
-%type <node> stmts stmt 
+%type <node> stmts stmt
 %type <node> block binop monop
 %type <node> assign varlet for dowhile while return ifelse funcall exprstmt
 
@@ -62,7 +62,7 @@ static int yyerror( char *errname);
 %left LE LT GE GT
 %left MINUS PLUS
 %left STAR SLASH PERCENT
-%right UMINUS 
+%right UMINUS
 %right FACTORIAL
 %right THEN
 %right CAST

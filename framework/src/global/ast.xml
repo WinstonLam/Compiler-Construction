@@ -30,9 +30,11 @@
 
       <traversal id="CA" name="Context Analysis" default="sons" include="context_analysis.h">
         <travuser>
+            <node name="Program" />
             <node name="FunDef" />
             <node name="VarDecl"/>
             <node name="Var"/>
+            <node name="Varlet"/>
             <node name="Param"/>
             <node name="GlobDef" />
             <node name="For"/>
@@ -536,7 +538,23 @@
                     </targets>
                 </type>
             </attribute>
+             <attribute name="Depth">
+                <type name="Int">
+                    <targets>
+                        <target mandatory="yes">
+                            <any/>
+                            <phases>
+                                <all/>
+                            </phases>
+                        </target>
+                    </targets>
+                </type>
+            </attribute>
         </attributes>
+         <flags>
+            <flag name="IsExport" />
+            <flag name="IsExtern" />
+        </flags>
     </node>
     <node name="TableLink">
         <sons>

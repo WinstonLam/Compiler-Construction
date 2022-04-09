@@ -74,8 +74,8 @@ void AddNode(node *entry, info *arg_info)
   {
     STMTS_NEXT(INFO_END(arg_info)) = entry;
     INFO_END(arg_info) = entry;
-  } 
-  else 
+  }
+  else
   {
     INFO_START(arg_info) = entry;
     INFO_END(arg_info) = INFO_START(arg_info);
@@ -95,6 +95,7 @@ node *GTprogram (node *arg_node, info *arg_info)
 
   if (INFO_START(arg_info) != NULL) {
     node *init = TBmakeFundef(T_void, STRcpy("__init"), NULL, TBmakeFunbody(NULL, NULL, INFO_START(arg_info)), NULL);
+    FUNDEF_ISEXPORT(init) = 1;
     PROGRAM_DECLS(arg_node) =  TBmakeDecls(init, PROGRAM_DECLS(arg_node));
   }
 
@@ -108,12 +109,12 @@ node *GTglobdef (node *arg_node, info *arg_info)
   DBUG_PRINT("Test", GLOBDEF_NAME(arg_node));
    // voeg een node toe aan de struct info als die initialized is
   if (GLOBDEF_INIT(arg_node)) {
- 
+
     AddNode(TBmakeStmts(TBmakeAssign(TBmakeVarlet(STRcpy(GLOBDEF_NAME(arg_node)), NULL, NULL), GLOBDEF_INIT(arg_node)), NULL), arg_info);
     GLOBDEF_INIT(arg_node) = NULL;
   }
   DBUG_RETURN( arg_node);
-  
+
 }
 
 /*

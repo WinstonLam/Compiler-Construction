@@ -13,7 +13,7 @@
 
 
 #include "symboltable_linker.h"
-
+#include "context_analysis.h"
 #include "types.h"
 #include "tree_basic.h"
 #include "traverse.h"
@@ -66,49 +66,46 @@ static info *FreeInfo( info *info)
   DBUG_RETURN( info);
 }
 
-
 // this function will return a given node in a symboltable
-node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
+bool IsLocal(char *entry, node *symboltable)
 {
-    // traverse through the symbol table untill node is found
-    DBUG_ENTER("GetNode");
-
     node *temp = symboltable;
     while (temp) {
-        DBUG_PRINT("CA", ("temp name: %s", SYMBOLENTRY_NAME(temp)));
         if (STReq(SYMBOLENTRY_NAME(temp),entry)) {
-            DBUG_PRINT("GetNode", ("Found node %s", entry));
-            return temp;
+            return TRUE;
         }
         temp = SYMBOLENTRY_NEXT(temp);
     }
-
-    if (!temp) {
-
-        DBUG_PRINT("GetNode",("variable: %s not found in current symboltable",entry));
-        if(!parenttable) {
-
-            CTIerrorLine(NODE_LINE(arg_node),"Use of undeclared variable %s", entry);
-        }
-        else {
-
-            DBUG_PRINT("GetNode",("searching: %s in parenttable",entry));
-            temp =  GetNode(entry, parenttable, arg_node, NULL);
-
-        }
-
-    }
-    DBUG_RETURN(temp);
+    return FALSE;
 }
 
+
 int GetParamcount (node *entry) {
-    node *temp = SYMBOLENTRY_PARAMS(FUNDEF_TABLELINK(entry));
+    node *temp = SYMBOLENTRY_PARAMS(entry);
     int count = 0;
     while (temp) {
         count++;
         temp = PARAM_NEXT(temp);
     }
     return count;
+}
+
+int GetVardeclcount(node *entry) {
+    node *temp = FUNDEF_SYMBOLENTRY(entry);
+    int count = 0;
+    int param = 0;
+    if (temp) {
+        param = GetParamcount(temp);
+    }
+
+    while (temp) {
+        count++;
+
+        temp = SYMBOLENTRY_NEXT(temp);
+    }
+
+
+    return count - param;
 }
 
 /*

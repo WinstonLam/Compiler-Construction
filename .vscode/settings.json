@@ -6,6 +6,8 @@
         "*.mac": "c",
         "*.tcc": "c",
         "valarray": "c",
-        "string": "c"
+        "string": "c",
+        "chrono": "c",
+        "variant": "c"
     }
 }
