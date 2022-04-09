@@ -256,7 +256,7 @@ node *GBCfundef(node *arg_node, info *arg_info)
     int size = snprintf(NULL, 0, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
     char *buf = malloc(size + 1);
 
-    snprintf(buf, size + 1, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
+    snprintf(buf, size + 1, "fun \"%s\" %s %s\n", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params);
     INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(buf));
   }
   else
@@ -272,7 +272,7 @@ node *GBCfundef(node *arg_node, info *arg_info)
         int size = snprintf(NULL, 0, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
         char *buf = malloc(size + 1);
 
-        snprintf(buf, size + 1, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params, FUNDEF_NAME(arg_node));
+        snprintf(buf, size + 1, "fun \"%s\" %s %s %s\n", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params == NULL ? "" : params, FUNDEF_NAME(arg_node));
         INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), STRcpy(buf));
     }
 
@@ -683,7 +683,7 @@ node *GBCfloat(node *arg_node, info *arg_info)
   int size = snprintf(NULL, 0, "float %f", FLOAT_VALUE(arg_node));
   char *buf = malloc(size + 1);
 
-  snprintf(buf, size + 1, "float %f", FLOAT_VALUE(arg_node));
+  snprintf(buf, size + 1, "float %f\n", FLOAT_VALUE(arg_node));
 
   INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), buf);
   INFO_CONSTANTCOUNT(arg_info) ++;
