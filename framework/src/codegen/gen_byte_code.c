@@ -150,8 +150,6 @@ node *GBCglobdef(node *arg_node, info *arg_info)
 
     int index = SYMBOLENTRY_OFFSET(GLOBDEF_TABLELINK(arg_node));
     char *string = STRcatn(4, "var \"", GLOBDEF_NAME(arg_node), "\" ", STRitoa(index));
-    CTInote( "offset: %d", index);
-    CTInote("TEST: %s", string);
 
     // Add to export list
     INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), string, NULL, 0);
@@ -232,6 +230,8 @@ node *GBCfuncall(node *arg_node, info *arg_info)
     fprintf(INFO_FILE(arg_info), "    jsr %d %s\n", GetParamcount(symboltableEntry), FUNCALL_NAME(arg_node));
   }
 
+  INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(symboltableEntry);
+
   DBUG_RETURN(arg_node);
 }
 
@@ -253,8 +253,6 @@ node *GBCfundef(node *arg_node, info *arg_info)
     params = STRcat(params, TypePrinter(PARAM_TYPE(temp)));
     temp = PARAM_NEXT(temp);
   }
-
-
 
   // If fundef is extern, get the params and add it to
   // .importfun "foo" int bool float
@@ -288,12 +286,11 @@ node *GBCfundef(node *arg_node, info *arg_info)
     // esr L
     // Where L is the amount of vardecls
     // int amountOfVarDecls = GetVardeclcount(FUNDEF_TABLELINK(arg_node));
-    int amountOfVarDecls = GetVardeclcount(arg_node);
+    int amountOfVarDecls = FUNDEF_VARDECLCOUNT(arg_node);
     if(amountOfVarDecls > 0)
     {
       fprintf(INFO_FILE(arg_info), "    esr %d\n", amountOfVarDecls);
     }
-
 
     FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
     FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
@@ -546,14 +543,14 @@ node *GBCvar(node *arg_node, info *arg_info)
     int index = SYMBOLENTRY_OFFSET(symbolentry);
 
     // TODO: Global check needs to check for local first
-    if(global)
+    if(SYMBOLENTRY_DEPTH(symbolentry) == 0)
     {
       //TODO: check if nodetype is globdecl, if so; the iload should be extern
       // node *decl = VAR_DECL(arg_node);
       // bool isextern = NODE_TYPE(decl) == N_globdecl;
 
       bool isextern = FALSE;
-      char *globalchar = isextern ? "e" : "g";
+      char *globalchar = global ? "g" : "e";
       switch (symbolentrytype)
       {
         case T_int:

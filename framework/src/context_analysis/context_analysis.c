@@ -37,8 +37,6 @@ struct INFO {
   node *scope;
   linkedlist *fornames;
   char *funname;
-  char *forname_old;
-  char *forname_new;
   int forcounter;
   int offset_globdef;
   int offset_fundef;
@@ -55,8 +53,6 @@ struct INFO {
 #define INFO_FORNAMES(n)  ((n)->fornames)
 #define INFO_FORCOUNTER(n)  ((n)->forcounter)
 #define INFO_FUNNAME(n)  ((n)->funname)
-#define INFO_FORNAME_OLD(n)  ((n)->forname_old)
-#define INFO_FORNAME_NEW(n)  ((n)->forname_new)
 #define INFO_SCOPE(n)  ((n)->scope)
 #define INFO_OFFSET_GLOBDEF(n)  ((n)->offset_globdef)
 #define INFO_OFFSET_FUNDEF(n)  ((n)->offset_fundef)
@@ -80,8 +76,6 @@ static info *MakeInfo(void)
   INFO_SYMBOLTABLE( tables) = NULL;
   INFO_SCOPE( tables) = NULL;
   INFO_FUNNAME( tables) = NULL;
-  INFO_FORNAME_OLD( tables) = NULL;
-  INFO_FORNAME_NEW( tables) = NULL;
   INFO_FORCOUNTER( tables) = 0;
   INFO_OFFSET_GLOBDEF( tables) = 0;
   INFO_OFFSET_FUNDEF( tables) = 0;

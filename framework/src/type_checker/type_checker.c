@@ -33,6 +33,7 @@ struct INFO {
   node *symboltable;
   node *parenttable;
   type currenttype;
+  int vardeclcount;
   type binoptype;
   type fundeftype;
 };
@@ -43,6 +44,7 @@ struct INFO {
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_PARENTTABLE(n) ((n)->parenttable)
 #define INFO_CURRENTTYPE(n)  ((n)->currenttype)
+#define INFO_VARDECLCOUNT(n)  ((n)->vardeclcount)
 #define INFO_BINOPTYPE(n)  ((n)->binoptype)
 #define INFO_FUNDEFTYPE(n)  ((n)->fundeftype)
 
@@ -60,6 +62,7 @@ static info *MakeInfo(void)
 
   INFO_SYMBOLTABLE(tables) = NULL;
   INFO_PARENTTABLE(tables) = NULL;
+  INFO_VARDECLCOUNT( tables) = 0;
   INFO_CURRENTTYPE(tables) = T_unknown;
   INFO_BINOPTYPE(tables) = T_unknown;
   INFO_FUNDEFTYPE(tables) = T_unknown;
@@ -138,8 +141,11 @@ node *TCfundef(node *arg_node, info *arg_info)
   FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
 
   // reset global scope symboltable
+  FUNDEF_VARDECLCOUNT(arg_node) = INFO_VARDECLCOUNT(arg_info);
+
   INFO_SYMBOLTABLE(arg_info) = globaltable;
   INFO_PARENTTABLE(arg_info) = NULL;
+  INFO_VARDECLCOUNT(arg_info) = 0;
 
   DBUG_RETURN(arg_node);
 }
@@ -172,8 +178,6 @@ node *TCfuncall(node *arg_node, info *arg_info)
 
   // get the first param
   node *temp = TRAVopt(FUNCALL_ARGS(arg_node), arg_info);
-
-
   node *param = SYMBOLENTRY_PARAMS(GetNode(FUNCALL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
 
   // check for each param if the given type corresponds
@@ -367,6 +371,19 @@ node *TCbinop(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node *TCvardecl (node *arg_node, info *arg_info)
+{
+  DBUG_ENTER("TCvardecl");
+
+  if VARDECL_INIT(arg_node) {
+    TRAVopt(VARDECL_INIT(arg_node),arg_info);
+  }
+  INFO_VARDECLCOUNT(arg_info) ++;
+  // search for next vardecl if there.
+  TRAVopt(VARDECL_NEXT(arg_node), arg_info);
+  DBUG_RETURN( arg_node);
+
+}
 
 node *TCassign(node *arg_node, info *arg_info)
 {
