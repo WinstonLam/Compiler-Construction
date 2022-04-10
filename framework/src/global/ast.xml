@@ -34,7 +34,7 @@
             <node name="FunDef" />
             <node name="VarDecl"/>
             <node name="Var"/>
-            <node name="Varlet"/>
+            <node name="VarLet"/>
             <node name="Param"/>
             <node name="GlobDef" />
             <node name="For"/>
@@ -63,6 +63,7 @@
             <node name="DoWhile"/>
             <node name="While"/>
             <node name="Var"/>
+            <node name="VarLet"/>
             <node name="Cast"/>
             <node name="For" />
             <node name="BinOp" />
@@ -110,6 +111,7 @@
             <node name="VarDecl" />
             <node name="FunCall" />
             <node name="FunDef" />
+            <node name="ExprStmt" />
             <node name="Return" />
             <node name="IfElse" />
             <node name="While" />
@@ -122,6 +124,7 @@
             <node name="Float"/>
             <node name="Bool"/>
             <node name="Var"/>
+            <node name="VarLet"/>
         </travuser>
       </traversal>
     </general>

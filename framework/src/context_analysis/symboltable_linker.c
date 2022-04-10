@@ -91,7 +91,8 @@ int GetParamcount (node *entry) {
 }
 
 int GetVardeclcount(node *entry) {
-    node *temp = FUNDEF_SYMBOLENTRY(entry);
+    node *temp = FUNDEF_TABLELINK(entry);
+
     int count = 0;
     int param = 0;
     if (temp) {
@@ -100,7 +101,6 @@ int GetVardeclcount(node *entry) {
 
     while (temp) {
         count++;
-
         temp = SYMBOLENTRY_NEXT(temp);
     }
 

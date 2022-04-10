@@ -154,10 +154,10 @@ node *GBCglobdef(node *arg_node, info *arg_info)
     CTInote("TEST: %s", string);
 
     // Add to export list
-    INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), string);
+    INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), string, NULL, 0);
   }
 
-  INFO_GLOBAL(arg_info) = PushIfExistElseCreate(INFO_GLOBAL(arg_info), TypePrinter(GLOBDEF_TYPE(arg_node)));
+  INFO_GLOBAL(arg_info) = PushIfExistElseCreate(INFO_GLOBAL(arg_info), TypePrinter(GLOBDEF_TYPE(arg_node)), NULL, 0);
 
   GLOBDEF_DIMS(arg_node) = TRAVopt(GLOBDEF_DIMS(arg_node),arg_info);
   GLOBDEF_INIT(arg_node) = TRAVopt(GLOBDEF_INIT(arg_node), arg_info);
@@ -173,7 +173,7 @@ node *GBCglobdecl(node *arg_node, info *arg_info)
 
   // Add to import list
   // All global declarations are imported, so there is never need for a global one
-  INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), TypePrinter(GLOBDECL_TYPE(arg_node)));
+  INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), TypePrinter(GLOBDECL_TYPE(arg_node)), NULL, 0);
 
   GLOBDECL_DIMS(arg_node) = TRAVopt(GLOBDECL_DIMS(arg_node),arg_info);
 
@@ -188,20 +188,20 @@ node *GBCvardecl(node *arg_node, info *arg_info)
     VARDECL_INIT(arg_node) = TRAVopt(VARDECL_INIT(arg_node), arg_info);
     const type currenttype = INFO_CURRENTTYPE(arg_info);
 
-    int index = SYMBOLENTRY_OFFSET(GetNode(VARDECL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
+    int offset = SYMBOLENTRY_OFFSET(GetNode(VARDECL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
 
     switch (currenttype)
       {
         case T_int:
-          fprintf(INFO_FILE(arg_info), "    istore %d\n", index);
+          fprintf(INFO_FILE(arg_info), "    istore %d\n", offset);
           break;
 
         case T_float:
-          fprintf(INFO_FILE(arg_info), "    fstore %d\n", index);
+          fprintf(INFO_FILE(arg_info), "    fstore %d\n", offset);
           break;
 
         case T_bool:
-          fprintf(INFO_FILE(arg_info), "    bstore %d\n", index);
+          fprintf(INFO_FILE(arg_info), "    bstore %d\n", offset);
           break;
 
         default:
@@ -254,6 +254,8 @@ node *GBCfundef(node *arg_node, info *arg_info)
     temp = PARAM_NEXT(temp);
   }
 
+
+
   // If fundef is extern, get the params and add it to
   // .importfun "foo" int bool float
   // Where the first int is the type and the others are the params
@@ -264,7 +266,7 @@ node *GBCfundef(node *arg_node, info *arg_info)
     char *buf = malloc(size + 1);
 
     snprintf(buf, size + 1, "fun \"%s\" %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params);
-    INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(buf));
+    INFO_IMPORT(arg_info) = PushIfExistElseCreate(INFO_IMPORT(arg_info), STRcpy(buf), NULL, 0);
   }
   else
   {
@@ -276,22 +278,22 @@ node *GBCfundef(node *arg_node, info *arg_info)
     // .exportfun "foo" void int int[] foo
     if (FUNDEF_ISEXPORT(arg_node))
     {
-        int size = snprintf(NULL, 0, "fun \"%s\" %s %s%s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
+        int size = snprintf(NULL, 0, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
         char *buf = malloc(size + 1);
-
-        snprintf(buf, size + 1, "fun \"%s\" %s %s%s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
-        INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), STRcpy(buf));
+        snprintf(buf, size + 1, "fun \"%s\" %s %s %s", FUNDEF_NAME(arg_node), TypePrinter(FUNDEF_TYPE(arg_node)), params, FUNDEF_NAME(arg_node));
+        INFO_EXPORT(arg_info) = PushIfExistElseCreate(INFO_EXPORT(arg_info), STRcpy(buf), NULL, 0);
     }
 
     // Print esr as
     // esr L
     // Where L is the amount of vardecls
-    // int amountOfVarDecls = CountVarDecls(FUNDEF_TABLELINK(arg_node));
+    // int amountOfVarDecls = GetVardeclcount(FUNDEF_TABLELINK(arg_node));
     int amountOfVarDecls = GetVardeclcount(arg_node);
     if(amountOfVarDecls > 0)
     {
       fprintf(INFO_FILE(arg_info), "    esr %d\n", amountOfVarDecls);
     }
+
 
     FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
     FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
@@ -309,6 +311,35 @@ node *GBCfundef(node *arg_node, info *arg_info)
   DBUG_RETURN(arg_node);
 }
 
+node *GBCexprstmt(node *arg_node, info *arg_info)
+{
+    DBUG_ENTER("GBCexprstmt");
+
+    node *expr = EXPRSTMT_EXPR(arg_node);
+    TRAVdo(expr, arg_info);
+
+    if (NODE_TYPE(expr) == N_funcall)
+    {
+        node *symbolentry = GetNode(FUNCALL_NAME(expr), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
+
+        switch (SYMBOLENTRY_TYPE(symbolentry))
+        {
+        case T_int:
+            fprintf(INFO_FILE(arg_info), "    ipop\n");
+            break;
+        case T_float:
+            fprintf(INFO_FILE(arg_info), "    fpop\n");
+            break;
+        case T_bool:
+            fprintf(INFO_FILE(arg_info), "    bpop\n");
+            break;
+        default:
+            break;
+        }
+    }
+
+    DBUG_RETURN(arg_node);
+}
 
 node *GBCreturn(node *arg_node, info *arg_info)
 {
@@ -376,16 +407,16 @@ node *GBCifelse(node *arg_node, info *arg_info)
   }
 
   char *endBranch = IFELSE_ELSE(arg_node) ? createBranch("end", arg_info) : elseBranch;
-  fprintf(INFO_FILE(arg_info), "  branch_f %s\n\n", elseBranch);
+  fprintf(INFO_FILE(arg_info), "    branch_f %s\n", elseBranch);
 
   TRAVopt(IFELSE_THEN(arg_node), arg_info);
 
   if (elseExists)
   {
-      fprintf(INFO_FILE(arg_info), "  jump %s\n\n", endBranch);
+      fprintf(INFO_FILE(arg_info), "    jump %s\n", endBranch);
       fprintf(INFO_FILE(arg_info), "%s:\n", elseBranch);
       TRAVopt(IFELSE_ELSE(arg_node), arg_info);
-      fputc('\n', INFO_FILE(arg_info));
+      // fputc('\n', INFO_FILE(arg_info));
   }
 
   fprintf(INFO_FILE(arg_info), "%s:\n", endBranch);
@@ -408,15 +439,15 @@ node *GBCwhile(node *arg_node, info *arg_info)
     char *whileBranch = createBranch("while", arg_info);
     char *endBranch = createBranch("end", arg_info);
 
-    fprintf(INFO_FILE(arg_info), "\n%s:\n", whileBranch);
+    fprintf(INFO_FILE(arg_info), "%s:\n", whileBranch);
 
     TRAVdo(WHILE_COND(arg_node), arg_info);
-    fprintf(INFO_FILE(arg_info), "  branch_f %s\n", endBranch);
+    fprintf(INFO_FILE(arg_info), "    branch_f %s\n", endBranch);
 
 
     TRAVopt(WHILE_BLOCK(arg_node), arg_info);
-    fprintf(INFO_FILE(arg_info), "  jump %s\n", whileBranch);
-    fprintf(INFO_FILE(arg_info), "%s:\n\n", endBranch);
+    fprintf(INFO_FILE(arg_info), "    jump %s\n", whileBranch);
+    fprintf(INFO_FILE(arg_info), "%s:\n", endBranch);
 
     free(whileBranch);
     free(endBranch);
@@ -441,28 +472,22 @@ node *GBCdowhile(node *arg_node, info *arg_info)
     DBUG_RETURN(arg_node);
 }
 
-
-node *GBCvar(node *arg_node, info *arg_info)
+node *GBCvarlet(node *arg_node, info *arg_info)
 {
-    DBUG_ENTER("GBCvar");
-    node *symbolentry = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
+    DBUG_ENTER("GBCvarlet");
+    node *symbolentry = GetNode(VARLET_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
 
-    DBUG_PRINT("GBC", ("%s", NODE_TYPE(arg_node)));
-    bool global = FALSE;
-
-    if(VAR_ISGLOBAL(arg_node) == 1)
-    {
-        global = TRUE;
-    }
-  
     type symbolentrytype = SYMBOLENTRY_TYPE(symbolentry);
     int index = SYMBOLENTRY_OFFSET(symbolentry);
-    int depth = SYMBOLENTRY_DEPTH(symbolentry);
-    // NODE_TYPE(VAR_DECL(arg_node)); 
-    if(global)
-    {
-      char *globalchar = depth == 0 ? "e" : "g";
 
+    if(SYMBOLENTRY_DEPTH(symbolentry) == 0)
+    {
+      //TODO: check if nodetype is globdecl, if so; the iload should be extern
+      // node *decl = VAR_DECL(arg_node);
+      // bool isextern = NODE_TYPE(decl) == N_globdecl;
+
+      bool isextern = FALSE;
+      char *globalchar = isextern ? "e" : "g";
       switch (symbolentrytype)
       {
         case T_int:
@@ -502,13 +527,78 @@ node *GBCvar(node *arg_node, info *arg_info)
       }
     }
 
+    DBUG_RETURN(arg_node);
+}
 
 
+node *GBCvar(node *arg_node, info *arg_info)
+{
+    DBUG_ENTER("GBCvar");
+    node *symbolentry = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
+
+    bool global = FALSE;
+    if(VAR_ISGLOBAL(arg_node) == 1)
+    {
+        global = TRUE;
+    }
+
+    type symbolentrytype = SYMBOLENTRY_TYPE(symbolentry);
+    int index = SYMBOLENTRY_OFFSET(symbolentry);
+
+    // TODO: Global check needs to check for local first
+    if(global)
+    {
+      //TODO: check if nodetype is globdecl, if so; the iload should be extern
+      // node *decl = VAR_DECL(arg_node);
+      // bool isextern = NODE_TYPE(decl) == N_globdecl;
+
+      bool isextern = FALSE;
+      char *globalchar = isextern ? "e" : "g";
+      switch (symbolentrytype)
+      {
+        case T_int:
+          fprintf(INFO_FILE(arg_info), "    iload%s %d\n", globalchar, index);
+          break;
+
+        case T_float:
+          fprintf(INFO_FILE(arg_info), "    fload%s %d\n", globalchar, index);
+          break;
+
+        case T_bool:
+          fprintf(INFO_FILE(arg_info), "    bload%s %d\n", globalchar, index);
+          break;
+
+        default:
+          break;
+      }
+    }
+    else
+    {
+      switch (symbolentrytype)
+      {
+        case T_int:
+          fprintf(INFO_FILE(arg_info), index <= 3 ? "    iload_%d\n" : "    iload %d\n", index);
+          break;
+
+        case T_float:
+          fprintf(INFO_FILE(arg_info), index <= 3 ? "    fload_%d\n" : "    fload %d\n", index);
+          break;
+
+        case T_bool:
+          fprintf(INFO_FILE(arg_info), index <= 3 ? "    bload_%d\n" : "    bload %d\n", index);
+          break;
+
+        default:
+          break;
+      }
+    }
 
     INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(symbolentry);
 
     DBUG_RETURN(arg_node);
 }
+
+
 
 node *GBCassign(node *arg_node, info *arg_info)
 {
@@ -577,7 +667,6 @@ node *GBCbinop(node *arg_node, info *arg_info)
   }
 
   const binop op = BINOP_OP(arg_node);
-
   switch (op)
   {
     case BO_add:
@@ -734,6 +823,7 @@ node *GBCnum(node *arg_node, info *arg_info)
 
   int count = INFO_CONSTANTCOUNT(arg_info);
   int value = NUM_VALUE(arg_node);
+  // FPRINTF(INFO_FILE(arg_info), "%d");
   // If value is 0 or 1, load instantly; otherwise load as constant from table and add to table
   if(value == 0 || value == 1)
   {
@@ -749,7 +839,7 @@ node *GBCnum(node *arg_node, info *arg_info)
 
     // TODO: Make table unique
     char *string = STRcat("int ", STRitoa(value));
-    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), string);
+    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), string, NULL, 0);
     INFO_CONSTANTCOUNT(arg_info) ++;
   }
 
@@ -783,7 +873,7 @@ node *GBCfloat(node *arg_node, info *arg_info)
     char *buf = malloc(size + 1);
     snprintf(buf, size + 1, "float %f\n", value);
 
-    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), buf);
+    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), buf, NULL, 0);
     INFO_CONSTANTCOUNT(arg_info) ++;
   }
 
@@ -815,7 +905,7 @@ node *GBCbool(node *arg_node, info *arg_info)
     fprintf(INFO_FILE(arg_info), "    bloadc %d\n", count);
 
     char *string = STRcat("bool ", BOOL_VALUE(arg_node) ? "true" : "false");
-    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), string);
+    INFO_CONSTANT(arg_info) = PushIfExistElseCreate(INFO_CONSTANT(arg_info), string, NULL, 0);
     INFO_CONSTANTCOUNT(arg_info) ++;
   }
 
@@ -858,7 +948,6 @@ node *GBCdoGenByteCode( node *syntaxtree)
 
   info *arg_info = MakeInfo();
   INFO_FILE(arg_info) = stdout;
-  DBUG_PRINT("GBC", ("%s", global.outfile));
 
   // Check if global output file is set, otherwise use stdout
   if(global.outfile != NULL)

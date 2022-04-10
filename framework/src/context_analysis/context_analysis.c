@@ -13,6 +13,8 @@
 
 
 #include "context_analysis.h"
+#include "symboltable_linker.h"
+#include "linkedlist.h"
 #include "copy.h"
 #include "types.h"
 #include "tree_basic.h"
@@ -33,6 +35,7 @@ struct INFO {
   node *symboltable;
   node *parenttable;
   node *scope;
+  linkedlist *fornames;
   char *funname;
   char *forname_old;
   char *forname_new;
@@ -49,6 +52,7 @@ struct INFO {
 
 #define INFO_SYMBOLTABLE(n)  ((n)->symboltable)
 #define INFO_PARENTTABLE(n)  ((n)->parenttable)
+#define INFO_FORNAMES(n)  ((n)->fornames)
 #define INFO_FORCOUNTER(n)  ((n)->forcounter)
 #define INFO_FUNNAME(n)  ((n)->funname)
 #define INFO_FORNAME_OLD(n)  ((n)->forname_old)
@@ -72,6 +76,7 @@ static info *MakeInfo(void)
   tables = (info *)MEMmalloc(sizeof(info));
 
   INFO_PARENTTABLE( tables) = NULL;
+  INFO_FORNAMES( tables) = NULL;
   INFO_SYMBOLTABLE( tables) = NULL;
   INFO_SCOPE( tables) = NULL;
   INFO_FUNNAME( tables) = NULL;
@@ -105,7 +110,8 @@ node *RenameCheck(info *arg_info, node *entry) {
 
   SYMBOLENTRY_NAME(entry) = STRcatn(3, SYMBOLENTRY_NAME(entry), "_", STRitoa(INFO_FORCOUNTER(arg_info)));
   // if variable has been renamed increment the counter
-  INFO_FORCOUNTER(arg_info) ++;
+  INFO_FORCOUNTER(arg_info) += 1;
+
   DBUG_RETURN(entry);
 
 }
@@ -141,7 +147,7 @@ info *InsertEntry (info *arg_info, node *entry, node *arg_node) {
 node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
 {
     // traverse through the symbol table untill node is found
-    DBUG_ENTER("GetNode");
+    // DBUG_ENTER("GetNode");
 
     node *temp = symboltable;
     while (temp) {
@@ -158,7 +164,7 @@ node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
         DBUG_PRINT("GetNode",("variable: %s not found in current symboltable",entry));
         if(!parenttable) {
 
-            CTIerror("Use of undeclared variable: %s",entry);
+            CTIerrorLine(NODE_LINE(arg_node),"Use of undeclared variable %s", entry);
         }
         else {
 
@@ -171,7 +177,8 @@ node *GetNode(char *entry, node *symboltable, node *arg_node, node *parenttable)
         }
 
     }
-    DBUG_RETURN(temp);
+    // DBUG_RETURN(temp);
+    return temp;
 }
 
 /*
@@ -237,6 +244,10 @@ node *CAfundef (node *arg_node, info *arg_info)
       FUNBODY_VARDECLS(FUNDEF_FUNBODY(arg_node)) = COPYdoCopy(INFO_SCOPE(arg_info));
   }
 
+        // reset the scope to the global scope
+  INFO_SYMBOLTABLE(arg_info) = globaltable;
+  INFO_PARENTTABLE(arg_info) = NULL;
+  INFO_DEPTH( arg_info) = 0;
 
   // increment offset counter
   int offset = INFO_OFFSET_FUNDEF(arg_info) ++;
@@ -244,17 +255,13 @@ node *CAfundef (node *arg_node, info *arg_info)
   node *new = TBmakeSymbolentry(FUNDEF_TYPE(arg_node),STRcpy(FUNDEF_NAME(arg_node)), offset, INFO_DEPTH(arg_info),NULL, COPYdoCopy(FUNDEF_PARAMS(arg_node)));
 
 
+  // use the InsertEntry function to insert the new node into the symboltable
+  InsertEntry(arg_info, new, arg_node);
+
   if (FUNDEF_ISEXTERN(arg_node)) {
       // if the function is extern then add it to the extern table
       SYMBOLENTRY_ISEXTERN(new) = TRUE;
   }
-      // reset the scope to the global scope
-  INFO_SYMBOLTABLE(arg_info) = globaltable;
-  INFO_PARENTTABLE(arg_info) = NULL;
-  INFO_DEPTH( arg_info) = 1;
-
-  // use the InsertEntry function to insert the new node into the symboltable
-  InsertEntry(arg_info, new, arg_node);
 
   DBUG_RETURN(arg_node);
   }
@@ -264,12 +271,12 @@ node *CAvarlet(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvarlet");
 
-  if (STReq(VARLET_NAME(arg_node),INFO_FORNAME_OLD(arg_info))) {
-    // if the variable is a for loop variable then rename it
-    VARLET_NAME(arg_node) = STRcpy(INFO_FORNAME_NEW(arg_info));
+  if (INFO_FORNAMES(arg_info)) {
+    linkedlist *lookup = Find(INFO_FORNAMES(arg_info), VARLET_NAME(arg_node));
+    if (lookup) {
+      VARLET_NAME(arg_node) = STRcpy(lookup->substring);
+    }
   }
-
-  VARLET_DECL(arg_node) = GetNode(VARLET_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
 
   DBUG_RETURN(arg_node);
 }
@@ -278,13 +285,12 @@ node *CAvar(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("CAvar");
 
-  if (STReq(VAR_NAME(arg_node),INFO_FORNAME_OLD(arg_info))) {
-    // if the variable is a for loop variable then rename it
-    VAR_NAME(arg_node) = STRcpy(INFO_FORNAME_NEW(arg_info));
+  if (INFO_FORNAMES(arg_info)) {
+    linkedlist *lookup = Find(INFO_FORNAMES(arg_info), VAR_NAME(arg_node));
+    if (lookup) {
+      VAR_NAME(arg_node) = STRcpy(lookup->substring);
+    }
   }
-
-  VAR_DECL(arg_node) = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
-
   DBUG_RETURN(arg_node);
 }
 
@@ -335,8 +341,7 @@ node *CAfor(node *arg_node, info *arg_info)
   // if instance variable is reused in the nested for loop then rename
   node *renamed = RenameCheck(arg_info, COPYdoCopy(new));
 
-  INFO_FORNAME_OLD(arg_info) = STRcpy(FOR_LOOPVAR(arg_node));
-  INFO_FORNAME_NEW(arg_info) = STRcpy(SYMBOLENTRY_NAME(renamed));
+  INFO_FORNAMES(arg_info) = PushIfExistElseCreate(INFO_FORNAMES(arg_info), STRcpy(FOR_LOOPVAR(arg_node)), STRcpy(SYMBOLENTRY_NAME(renamed)), 1);
 
   // create new vardecl in the current scope
   if (INFO_SCOPE(arg_info)) {
