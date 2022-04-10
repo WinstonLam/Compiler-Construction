@@ -162,8 +162,6 @@ node *TCreturn(node *arg_node, info *arg_info)
   // traverse into the return expression
   RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
 
-  CTInote("TCreturn: %s", TypePrinter(INFO_CURRENTTYPE(arg_info)));
-
   // check if the return type is the same as the function type
   if (INFO_FUNDEFTYPE(arg_info) != INFO_CURRENTTYPE(arg_info)) {
     CTIerror("expected return type: %s, but got: %s", TypePrinter(INFO_FUNDEFTYPE(arg_info)), TypePrinter(INFO_CURRENTTYPE(arg_info)));

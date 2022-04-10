@@ -106,7 +106,6 @@ node *GTprogram (node *arg_node, info *arg_info)
 node *GTglobdef (node *arg_node, info *arg_info)
 {
   DBUG_ENTER("GTglobdef");
-  DBUG_PRINT("Test", GLOBDEF_NAME(arg_node));
    // voeg een node toe aan de struct info als die initialized is
   if (GLOBDEF_INIT(arg_node)) {
 
