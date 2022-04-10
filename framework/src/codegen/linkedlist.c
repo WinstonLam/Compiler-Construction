@@ -98,7 +98,6 @@ linkedlist *Find(linkedlist *head, char *string)
 
 void FreeLinkedlist(linkedlist *list)
 {
-    // DBUG_PRINT("GBC", ("%s", linkedlist));
     linkedlist *updated;
 
     while(list != NULL)

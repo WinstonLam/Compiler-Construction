@@ -54,8 +54,9 @@ static info *MakeInfo(void)
   INFO_PARENTTABLE(tables) = NULL;
 
   INFO_CURRENTTYPE(tables) = T_unknown;
-  INFO_CONSTANTCOUNT(tables) = 0;
+
   INFO_BRANCHCOUNT(tables) = 0;
+  INFO_CONSTANTCOUNT(tables) = 0;
 
   INFO_GLOBAL(tables) = NULL;
   INFO_CONSTANT(tables) = NULL;
@@ -71,11 +72,6 @@ static info *FreeInfo( info *info)
   DBUG_ENTER ("FreeInfo");
 
   info = MEMfree(info);
-
-  // FreeLinkedlist(INFO_GLOBAL(info));
-  // FreeLinkedlist(INFO_CONSTANT(info));
-  // FreeLinkedlist(INFO_IMPORT(info));
-  // FreeLinkedlist(INFO_EXPORT(info));
 
   DBUG_RETURN(info);
 }
@@ -131,6 +127,20 @@ static char *TypePrinter(type types)
   }
 }
 
+static char *TypeCharPrinter(type types)
+{
+  switch (types)
+  {
+    case T_bool:
+      return "b";
+    case T_int:
+      return "i";
+    case T_float:
+      return "f";
+    default:
+      return "";
+  }
+}
 
 node *GBCprogram(node *arg_node, info *arg_info)
 {
@@ -188,23 +198,7 @@ node *GBCvardecl(node *arg_node, info *arg_info)
 
     int offset = SYMBOLENTRY_OFFSET(GetNode(VARDECL_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info)));
 
-    switch (currenttype)
-      {
-        case T_int:
-          fprintf(INFO_FILE(arg_info), "    istore %d\n", offset);
-          break;
-
-        case T_float:
-          fprintf(INFO_FILE(arg_info), "    fstore %d\n", offset);
-          break;
-
-        case T_bool:
-          fprintf(INFO_FILE(arg_info), "    bstore %d\n", offset);
-          break;
-
-        default:
-          break;
-      }
+    fprintf(INFO_FILE(arg_info), "    %sstore %d\n", TypeCharPrinter(currenttype), offset);
   }
 
   VARDECL_DIMS(arg_node) = TRAVopt(VARDECL_DIMS(arg_node), arg_info);
@@ -239,8 +233,6 @@ node *GBCfuncall(node *arg_node, info *arg_info)
 node *GBCfundef(node *arg_node, info *arg_info)
 {
   DBUG_ENTER("GBCfundef");
-
-  // node *paramnode = PARAM_TABLELINK(FUNDEF_PARAMS(arg_node));
 
   node *globaltable = INFO_SYMBOLTABLE(arg_info);
   INFO_PARENTTABLE(arg_info) = globaltable;
@@ -285,7 +277,6 @@ node *GBCfundef(node *arg_node, info *arg_info)
     // Print esr as
     // esr L
     // Where L is the amount of vardecls
-    // int amountOfVarDecls = GetVardeclcount(FUNDEF_TABLELINK(arg_node));
     int amountOfVarDecls = FUNDEF_VARDECLCOUNT(arg_node);
     if(amountOfVarDecls > 0)
     {
@@ -295,10 +286,13 @@ node *GBCfundef(node *arg_node, info *arg_info)
     FUNDEF_PARAMS(arg_node) = TRAVopt(FUNDEF_PARAMS(arg_node), arg_info);
     FUNDEF_FUNBODY(arg_node) = TRAVopt(FUNDEF_FUNBODY(arg_node), arg_info);
 
+    // Traversal doesn't go into return if there is none because it's a void function
+    // But we still need to print a return instruction
     if (FUNDEF_TYPE(arg_node) == T_void)
     {
       fprintf(INFO_FILE(arg_info), "    %s\n", "return");
     }
+
     fprintf(INFO_FILE(arg_info), "\n");
   }
 
@@ -307,6 +301,7 @@ node *GBCfundef(node *arg_node, info *arg_info)
 
   DBUG_RETURN(arg_node);
 }
+
 
 node *GBCexprstmt(node *arg_node, info *arg_info)
 {
@@ -319,24 +314,16 @@ node *GBCexprstmt(node *arg_node, info *arg_info)
     {
         node *symbolentry = GetNode(FUNCALL_NAME(expr), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
 
-        switch (SYMBOLENTRY_TYPE(symbolentry))
+        type symbolentrytype = SYMBOLENTRY_TYPE(symbolentry);
+        if(symbolentrytype == T_int || symbolentrytype == T_float || symbolentrytype == T_bool)
         {
-        case T_int:
-            fprintf(INFO_FILE(arg_info), "    ipop\n");
-            break;
-        case T_float:
-            fprintf(INFO_FILE(arg_info), "    fpop\n");
-            break;
-        case T_bool:
-            fprintf(INFO_FILE(arg_info), "    bpop\n");
-            break;
-        default:
-            break;
+          fprintf(INFO_FILE(arg_info), "    %spop\n", TypeCharPrinter(symbolentrytype));
         }
     }
 
     DBUG_RETURN(arg_node);
 }
+
 
 node *GBCreturn(node *arg_node, info *arg_info)
 {
@@ -344,33 +331,9 @@ node *GBCreturn(node *arg_node, info *arg_info)
 
   RETURN_EXPR(arg_node) = TRAVopt(RETURN_EXPR(arg_node), arg_info);
 
-  const char *returntype;
-  type symboltype = INFO_CURRENTTYPE(arg_info);
+  type symbolentrytype = INFO_CURRENTTYPE(arg_info);
 
-  switch (symboltype)
-  {
-    case T_int:
-      returntype = "ireturn";
-      break;
-
-    case T_float:
-      returntype = "freturn";
-      break;
-
-    case T_bool:
-      returntype = "breturn";
-      break;
-
-    case T_void:
-      returntype = "return";
-      break;
-
-    case T_unknown:
-      CTIabortLine(NODE_LINE(arg_node), "Unknown type found, aborting byte code generation");
-      break;
-  }
-
-  fprintf(INFO_FILE(arg_info), "    %s\n", returntype);
+  fprintf(INFO_FILE(arg_info), "    %sreturn\n", TypeCharPrinter(symbolentrytype));
 
   DBUG_RETURN(arg_node);
 }
@@ -391,19 +354,10 @@ node *GBCifelse(node *arg_node, info *arg_info)
 
   TRAVdo(IFELSE_COND(arg_node), arg_info);
 
-  char *elseBranch;
   bool elseExists = IFELSE_ELSE(arg_node) != NULL;
-
-  if (elseExists)
-  {
-    elseBranch = createBranch("else", arg_info);
-  }
-  else
-  {
-    elseBranch = createBranch("end", arg_info);
-  }
-
+  char *elseBranch = elseExists ? createBranch("else", arg_info) : createBranch("end", arg_info);
   char *endBranch = IFELSE_ELSE(arg_node) ? createBranch("end", arg_info) : elseBranch;
+
   fprintf(INFO_FILE(arg_info), "    branch_f %s\n", elseBranch);
 
   TRAVopt(IFELSE_THEN(arg_node), arg_info);
@@ -412,17 +366,11 @@ node *GBCifelse(node *arg_node, info *arg_info)
   {
       fprintf(INFO_FILE(arg_info), "    jump %s\n", endBranch);
       fprintf(INFO_FILE(arg_info), "%s:\n", elseBranch);
+
       TRAVopt(IFELSE_ELSE(arg_node), arg_info);
-      // fputc('\n', INFO_FILE(arg_info));
   }
 
   fprintf(INFO_FILE(arg_info), "%s:\n", endBranch);
-  free(elseBranch);
-
-  if (elseExists)
-  {
-      free(endBranch);
-  }
 
   DBUG_RETURN(arg_node);
 
@@ -441,16 +389,13 @@ node *GBCwhile(node *arg_node, info *arg_info)
     TRAVdo(WHILE_COND(arg_node), arg_info);
     fprintf(INFO_FILE(arg_info), "    branch_f %s\n", endBranch);
 
-
     TRAVopt(WHILE_BLOCK(arg_node), arg_info);
     fprintf(INFO_FILE(arg_info), "    jump %s\n", whileBranch);
     fprintf(INFO_FILE(arg_info), "%s:\n", endBranch);
 
-    free(whileBranch);
-    free(endBranch);
-
     DBUG_RETURN(arg_node);
 }
+
 
 node *GBCdowhile(node *arg_node, info *arg_info)
 {
@@ -464,10 +409,9 @@ node *GBCdowhile(node *arg_node, info *arg_info)
 
     fprintf(INFO_FILE(arg_info), "  branch_t %s\n", branchName);
 
-    free(branchName);
-
     DBUG_RETURN(arg_node);
 }
+
 
 node *GBCvarlet(node *arg_node, info *arg_info)
 {
@@ -480,48 +424,15 @@ node *GBCvarlet(node *arg_node, info *arg_info)
     if(SYMBOLENTRY_DEPTH(symbolentry) == 0)
     {
       //TODO: check if nodetype is globdecl, if so; the iload should be extern
-      // node *decl = VAR_DECL(arg_node);
-      // bool isextern = NODE_TYPE(decl) == N_globdecl;
-
+      // Sadly not fixed in time :(
       bool isextern = FALSE;
       char *globalchar = isextern ? "e" : "g";
-      switch (symbolentrytype)
-      {
-        case T_int:
-          fprintf(INFO_FILE(arg_info), "    iload%s %d\n", globalchar, index);
-          break;
 
-        case T_float:
-          fprintf(INFO_FILE(arg_info), "    fload%s %d\n", globalchar, index);
-          break;
-
-        case T_bool:
-          fprintf(INFO_FILE(arg_info), "    bload%s %d\n", globalchar, index);
-          break;
-
-        default:
-          break;
-      }
+      fprintf(INFO_FILE(arg_info), "    %sload%s %d\n", TypeCharPrinter(symbolentrytype), globalchar, index);
     }
     else
     {
-      switch (symbolentrytype)
-      {
-        case T_int:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    iload_%d\n" : "    iload %d\n", index);
-          break;
-
-        case T_float:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    fload_%d\n" : "    fload %d\n", index);
-          break;
-
-        case T_bool:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    bload_%d\n" : "    bload %d\n", index);
-          break;
-
-        default:
-          break;
-      }
+      fprintf(INFO_FILE(arg_info), index <= 3 ? "    %sload_%d\n" : "    %sload %d\n", TypeCharPrinter(symbolentrytype), index);
     }
 
     DBUG_RETURN(arg_node);
@@ -533,61 +444,19 @@ node *GBCvar(node *arg_node, info *arg_info)
     DBUG_ENTER("GBCvar");
     node *symbolentry = GetNode(VAR_NAME(arg_node), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
 
-    bool global = FALSE;
-    if(VAR_ISGLOBAL(arg_node) == 1)
-    {
-        global = TRUE;
-    }
-
     type symbolentrytype = SYMBOLENTRY_TYPE(symbolentry);
     int index = SYMBOLENTRY_OFFSET(symbolentry);
 
-    // TODO: Global check needs to check for local first
     if(SYMBOLENTRY_DEPTH(symbolentry) == 0)
     {
       //TODO: check if nodetype is globdecl, if so; the iload should be extern
-      // node *decl = VAR_DECL(arg_node);
-      // bool isextern = NODE_TYPE(decl) == N_globdecl;
-
-      bool isextern = FALSE;
-      char *globalchar = global ? "g" : "e";
-      switch (symbolentrytype)
-      {
-        case T_int:
-          fprintf(INFO_FILE(arg_info), "    iload%s %d\n", globalchar, index);
-          break;
-
-        case T_float:
-          fprintf(INFO_FILE(arg_info), "    fload%s %d\n", globalchar, index);
-          break;
-
-        case T_bool:
-          fprintf(INFO_FILE(arg_info), "    bload%s %d\n", globalchar, index);
-          break;
-
-        default:
-          break;
-      }
+      // Also couldn't finish in time :(
+      char *globalchar = VAR_ISGLOBAL(arg_node) ? "g" : "e";
+      fprintf(INFO_FILE(arg_info), "    %sload%s %d\n", TypeCharPrinter(symbolentrytype), globalchar, index);
     }
     else
     {
-      switch (symbolentrytype)
-      {
-        case T_int:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    iload_%d\n" : "    iload %d\n", index);
-          break;
-
-        case T_float:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    fload_%d\n" : "    fload %d\n", index);
-          break;
-
-        case T_bool:
-          fprintf(INFO_FILE(arg_info), index <= 3 ? "    bload_%d\n" : "    bload %d\n", index);
-          break;
-
-        default:
-          break;
-      }
+      fprintf(INFO_FILE(arg_info), index <= 3 ? "    %sload_%d\n" : "    %sload %d\n", TypeCharPrinter(symbolentrytype), index);
     }
 
     INFO_CURRENTTYPE(arg_info) = SYMBOLENTRY_TYPE(symbolentry);
@@ -606,27 +475,13 @@ node *GBCassign(node *arg_node, info *arg_info)
 
 
   node *symboltableentry = GetNode(VARLET_NAME(ASSIGN_LET(arg_node)), INFO_SYMBOLTABLE(arg_info), arg_node, INFO_PARENTTABLE(arg_info));
-  type nodetype = SYMBOLENTRY_TYPE(symboltableentry);
+  type symbolentrytype = SYMBOLENTRY_TYPE(symboltableentry);
   int index = SYMBOLENTRY_OFFSET(symboltableentry);
 
   int depth = SYMBOLENTRY_DEPTH(symboltableentry);
   char *globalchar = depth == 0 ? "g" : "";
-  switch (nodetype)
-  {
-    case T_int:
-      fprintf(INFO_FILE(arg_info), "    istore%s %d\n", globalchar, index);
-      break;
 
-    case T_float:
-      fprintf(INFO_FILE(arg_info), "    fstore%s %d\n", globalchar, index);
-      break;
-
-    case T_bool:
-      fprintf(INFO_FILE(arg_info), "    bstore%s %d\n", globalchar, index);
-      break;
-    default:
-      break;
-  }
+  fprintf(INFO_FILE(arg_info), "    %sstore%s %d\n", TypeCharPrinter(symbolentrytype), globalchar, index);
 
   DBUG_RETURN(arg_node);
 }
@@ -640,28 +495,8 @@ node *GBCbinop(node *arg_node, info *arg_info)
   BINOP_RIGHT(arg_node) = TRAVdo(BINOP_RIGHT(arg_node), arg_info);
 
   const type currenttype = INFO_CURRENTTYPE(arg_info);
+  const char *typestring = TypeCharPrinter(currenttype);
   const char *opstring;
-  const char *typestring;
-  switch (currenttype)
-  {
-    case T_int:
-      typestring = "i";
-      break;
-
-    case T_float:
-      typestring = "f";
-      break;
-
-    case T_bool:
-      typestring = "b";
-      break;
-
-    case T_unknown:
-      break;
-
-    default:
-      break;
-  }
 
   const binop op = BINOP_OP(arg_node);
   switch (op)
@@ -737,9 +572,9 @@ node *GBCmonop(node *arg_node, info *arg_info)
 
   const monop op = MONOP_OP(arg_node);
   const type currenttype = INFO_CURRENTTYPE(arg_info);
-  const char *opstring;
-  const char *typestring;
+  const char *typestring = TypeCharPrinter(currenttype);
 
+  const char *opstring;
   switch (op)
   {
     case MO_not:
@@ -752,28 +587,6 @@ node *GBCmonop(node *arg_node, info *arg_info)
 
     case MO_unknown:
       CTIabortLine(NODE_LINE(arg_node), "Unknown Monop operator found, aborting Byte code generation");
-      break;
-
-    default:
-      break;
-  }
-
-  switch (currenttype)
-  {
-    case T_int:
-      typestring = "i";
-      break;
-
-    case T_float:
-      typestring = "f";
-      break;
-
-    case T_bool:
-      typestring = "b";
-      break;
-
-    case T_unknown:
-      DBUG_PRINT("GBC", ("Unknown current type found"));
       break;
 
     default:
@@ -865,7 +678,6 @@ node *GBCfloat(node *arg_node, info *arg_info)
   {
     fprintf(INFO_FILE(arg_info), "    floadc %d\n", count);
 
-    // Shamelessly stolen from https://stackoverflow.com/a/29087251/12106583
     int size = snprintf(NULL, 0, "float %f", value);
     char *buf = malloc(size + 1);
     snprintf(buf, size + 1, "float %f\n", value);
